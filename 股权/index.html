@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>股权关联核查列表</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "PingFang SC", Helvetica, Arial, Verdana, "Microsoft YaHei", sans-serif;
+        font-synthesis: none;
+        --text: #5c5c5c;
+        --muted: #858585;
+        --line: #ebebeb;
+        --stripe: #f4f9fe;
+        --header: #fafafa;
+        --primary: #2590eb;
+        --primary-hover: #51a6ef;
+        --control-border: #d6d6d6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-width: 760px;
+        height: 100%;
+        margin: 0;
+        background: #ffffff;
+        color: var(--text);
+      }
+
+      body {
+        overflow: auto;
+        font-size: 14px;
+        line-height: 30px;
+      }
+
+      button,
+      select,
+      input {
+        font: inherit;
+      }
+
+      button,
+      select,
+      input,
+      a {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      ::selection {
+        color: #ffffff;
+        background: var(--primary);
+      }
+
+      .page {
+        display: flex;
+        min-height: 100%;
+        flex-direction: column;
+        padding: 8px 16px 0;
+      }
+
+      .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .unit-table {
+        width: 100%;
+        min-width: 980px;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .unit-table col:nth-child(1) {
+        width: 7%;
+      }
+
+      .unit-table col:nth-child(2) {
+        width: 30%;
+      }
+
+      .unit-table col:nth-child(3) {
+        width: 16%;
+      }
+
+      .unit-table col:nth-child(4) {
+        width: 12%;
+      }
+
+      .unit-table col:nth-child(5) {
+        width: 12%;
+      }
+
+      .unit-table col:nth-child(6) {
+        width: 12%;
+      }
+
+      .unit-table col:nth-child(7) {
+        width: 11%;
+      }
+
+      .unit-table th,
+      .unit-table td {
+        height: 41px;
+        padding: 9px 12px;
+        overflow: hidden;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 22px;
+      }
+
+      .unit-table th {
+        background: var(--header);
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      .unit-table tbody tr:nth-child(even) td {
+        background: var(--stripe);
+      }
+
+      .unit-table tbody td:nth-child(2) {
+        padding: 4px 0 4px 22px;
+        line-height: 32px;
+      }
+
+      .unit-table tbody tr {
+        transition: background-color 160ms ease-out;
+      }
+
+      .unit-table tbody tr:hover td {
+        background: #f5f5f5;
+      }
+
+      .view-link {
+        display: inline-flex;
+        width: 22px;
+        height: 22px;
+        align-items: center;
+        justify-content: flex-start;
+        color: var(--primary);
+        text-decoration: none;
+        vertical-align: middle;
+      }
+
+      .view-link:hover {
+        color: var(--primary-hover);
+      }
+
+      .view-link svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+      }
+
+      .view-link:focus-visible,
+      .pager button:focus-visible,
+      .pager select:focus-visible,
+      .pager input:focus-visible {
+        outline: 2px solid rgba(37, 144, 235, 0.45);
+        outline-offset: 2px;
+      }
+
+      .pagination-bar {
+        display: flex;
+        min-height: 45px;
+        flex: 1 0 45px;
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding: 8px 0;
+      }
+
+      .pager {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--text);
+        line-height: 28px;
+        white-space: nowrap;
+      }
+
+      .pager button,
+      .pager select,
+      .pager input {
+        height: 28px;
+        border: 1px solid var(--control-border);
+        border-radius: 4px;
+        background: #ffffff;
+        color: var(--text);
+      }
+
+      .pager button {
+        display: inline-grid;
+        min-width: 28px;
+        padding: 0 6px;
+        cursor: pointer;
+        place-items: center;
+      }
+
+      .pager button[aria-current="page"] {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
+      .pager button:disabled {
+        color: #c9cdd2;
+        cursor: not-allowed;
+      }
+
+      .pager svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+      }
+
+      .pager select {
+        width: 86px;
+        height: 28px;
+        margin-left: 4px;
+        padding: 0 4px;
+        border: 1px solid var(--control-border);
+        border-radius: 4px;
+        background: #ffffff;
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      .jump-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 12px;
+      }
+
+      .pager input {
+        width: 36px;
+        padding: 0 4px;
+        text-align: center;
+        appearance: textfield;
+      }
+
+      .pager input::-webkit-inner-spin-button,
+      .pager input::-webkit-outer-spin-button {
+        margin: 0;
+        appearance: none;
+      }
+
+      .total {
+        margin-left: 12px;
+      }
+
+      .detail-dialog {
+        width: min(1600px, calc(100vw - 64px));
+        height: min(610px, calc(100vh - 64px));
+        max-width: none;
+        max-height: calc(100vh - 64px);
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid var(--control-border);
+        background: #ffffff;
+        color: var(--text);
+        box-shadow: 0 10px 34px rgba(31, 56, 80, 0.2);
+      }
+
+      .detail-dialog::backdrop {
+        background: rgba(28, 45, 61, 0.42);
+      }
+
+      .dialog-shell {
+        display: flex;
+        height: 100%;
+        flex-direction: column;
+      }
+
+      .dialog-header {
+        display: flex;
+        min-height: 50px;
+        flex: 0 0 50px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .dialog-title {
+        margin: 0;
+        overflow: hidden;
+        color: #333333;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 24px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .close-button {
+        display: inline-grid;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #777777;
+        cursor: pointer;
+        place-items: center;
+      }
+
+      .close-button:hover {
+        color: var(--primary);
+      }
+
+      .close-button svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+      }
+
+      .dialog-body {
+        display: flex;
+        min-height: 0;
+        flex: 1 1 auto;
+        flex-direction: column;
+        padding: 8px 16px 0;
+        overflow: hidden;
+      }
+
+      .detail-search { display: flex; min-height: 58px; flex: 0 0 58px; align-items: flex-start; justify-content: center; gap: 12px; padding: 6px 0 10px; position: relative; z-index: 3; }
+      .search-field { display: flex; width: min(820px, calc(100% - 90px)); align-items: center; gap: 14px; }
+      .search-label { flex: 0 0 auto; color: #69758a; font-size: 14px; white-space: nowrap; }
+      .tree-select { position: relative; min-width: 0; flex: 1; }
+      .tree-select-control { display: flex; width: 100%; height: 34px; align-items: center; padding: 0 8px 0 12px; border: 1px solid #d8dfe8; border-radius: 3px; background: #fff; }
+      .tree-select:focus-within .tree-select-control, .tree-select.is-open .tree-select-control { border-color: #2f77e5; box-shadow: 0 0 0 1px rgba(47, 119, 229, 0.08); }
+      .tree-select-toggle { min-width: 0; height: 32px; flex: 1; padding: 0; overflow: hidden; border: 0; background: transparent; color: var(--text); cursor: pointer; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+      .tree-clear, .tree-arrow, .search-button, .search-collapse, .tree-branch-toggle { border: 0; background: transparent; cursor: pointer; }
+      .tree-clear { display: none; width: 26px; height: 30px; color: #a4acb8; font-size: 22px; line-height: 28px; }
+      .tree-select.has-value .tree-clear { display: block; }
+      .tree-arrow { display: grid; width: 26px; height: 30px; padding: 0; color: #337ee5; place-items: center; }
+      .tree-arrow svg, .search-collapse svg, .tree-branch-toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; transition: transform 160ms ease; }
+      .tree-select.is-open .tree-arrow svg { transform: rotate(180deg); }
+      .tree-dropdown { position: absolute; top: calc(100% + 3px); right: 0; left: 0; max-height: 320px; padding: 8px 6px; overflow: auto; border: 1px solid #e5e8ed; border-radius: 3px; background: #fff; box-shadow: 0 4px 12px rgba(31, 56, 80, 0.15); }
+      .tree-list, .tree-children { margin: 0; padding: 0; list-style: none; }
+      .tree-children { padding-left: 30px; }
+      .tree-branch.is-collapsed .tree-children { display: none; }
+      .tree-node { display: flex; min-height: 34px; align-items: center; gap: 8px; padding: 2px 8px; color: #505d72; line-height: 30px; }
+      .tree-node:hover { background: #f4f8fe; }
+      .tree-branch-toggle { display: grid; width: 20px; height: 30px; padding: 0; color: #8a96aa; place-items: center; }
+      .tree-branch.is-collapsed .tree-branch-toggle svg { transform: rotate(-90deg); }
+      .tree-leaf-spacer { width: 20px; flex: 0 0 20px; }
+      .tree-node input { width: 16px; height: 16px; margin: 0; accent-color: #2f77e5; cursor: pointer; }
+      .tree-node label { flex: 1; cursor: pointer; user-select: none; }
+      .search-button { display: inline-flex; height: 34px; align-items: center; gap: 6px; padding: 0 16px; border-radius: 3px; background: #3279df; color: #fff; }
+      .search-button:hover { background: #2169cf; }
+      .search-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+      .search-collapse { display: grid; width: 34px; height: 34px; padding: 0; border: 1px solid #d8dfe8; border-radius: 3px; color: #718096; place-items: center; }
+      .detail-search:not(.has-multiple-rows) .search-collapse { display: none; }
+      .detail-search.is-collapsed .search-field, .detail-search.is-collapsed .search-button { display: none; }
+      .detail-search.is-collapsed { min-height: 42px; justify-content: flex-end; padding-bottom: 8px; }
+      .detail-search.is-collapsed .search-collapse svg { transform: rotate(180deg); }
+      .detail-empty td { height: 88px; color: #9ca3af; text-align: center; }
+
+      .detail-table-wrap {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow: auto;
+      }
+
+      .detail-table {
+        width: 100%;
+        min-width: 1420px;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .detail-table col:nth-child(1) { width: 5%; }
+      .detail-table col:nth-child(2) { width: 15%; }
+      .detail-table col:nth-child(3) { width: 10%; }
+      .detail-table col:nth-child(4) { width: 7%; }
+      .detail-table col:nth-child(5) { width: 63%; }
+
+      .detail-table th,
+      .detail-table td {
+        height: 41px;
+        padding: 9px 12px;
+        overflow: hidden;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 22px;
+      }
+
+      .detail-table th {
+        background: var(--header);
+        color: var(--muted);
+      }
+
+      .detail-table tbody tr {
+        transition: background-color 160ms ease-out;
+      }
+
+      .detail-table tbody tr:nth-child(even) td {
+        background: var(--stripe);
+      }
+
+      .detail-table tbody tr:hover td {
+        background: #f5f5f5;
+      }
+
+      .detail-table .relation-path-cell {
+        height: auto;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+        vertical-align: top;
+      }
+
+      .relation-path-line {
+        display: block;
+        min-height: 22px;
+        overflow: hidden;
+        color: var(--text);
+        font-family: "PingFang SC", Helvetica, Arial, Verdana, "Microsoft YaHei", sans-serif;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: 22px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .dialog-footer {
+        display: flex;
+        min-height: 45px;
+        flex: 0 0 45px;
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding: 8px 16px;
+        overflow-x: auto;
+      }
+
+      .view-link {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .close-button:focus-visible {
+        outline: 2px solid rgba(37, 144, 235, 0.45);
+        outline-offset: 2px;
+      }
+
+      @media (max-width: 700px) {
+        .detail-dialog {
+          width: calc(100vw - 24px);
+          height: calc(100vh - 24px);
+          max-height: calc(100vh - 24px);
+        }
+
+        .dialog-shell {
+          height: 100%;
+        }
+
+        .dialog-title {
+          max-width: calc(100vw - 100px);
+        }
+
+        .detail-search { justify-content: flex-start; }
+        .search-field { width: calc(100% - 58px); }
+      }
+
+      @media (max-width: 900px) {
+        .pagination-bar {
+          min-width: 760px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="股权关联核查列表页面">
+      <section class="table-wrap" aria-label="股权关联核查列表">
+        <table class="unit-table">
+          <caption hidden>基于用户提供截图整理的股权关联示例数据</caption>
+          <colgroup><col /><col /><col /><col /><col /><col /><col /></colgroup>
+          <thead>
+            <tr>
+              <th scope="col">序号</th>
+              <th scope="col">单位名称</th>
+              <th scope="col">关联单位数量</th>
+              <th scope="col">股权关系</th>
+              <th scope="col">人员关系</th>
+              <th scope="col">信息相同</th>
+              <th scope="col">查看</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td title="广西大昌建设有限公司">广西大昌建设有限公司</td>
+              <td>1</td>
+              <td>1</td>
+              <td>1</td>
+              <td>2</td>
+              <td>
+                <button class="view-link" type="button" aria-label="查看广西大昌建设有限公司的股权关联详情" title="查看详情" data-unit="广西大昌建设有限公司">
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="m12.5 12.5 4 4" /></svg>
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td title="中建科工集团有限公司">中建科工集团有限公司</td>
+              <td>3</td>
+              <td>3</td>
+              <td>4</td>
+              <td>0</td>
+              <td>
+                <button class="view-link" type="button" aria-label="查看中建科工集团有限公司的股权关联详情" title="查看详情" data-unit="中建科工集团有限公司">
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="m12.5 12.5 4 4" /></svg>
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td title="工程建设总承包股份有限公司">工程建设总承包股份有限公司</td>
+              <td>1</td>
+              <td>0</td>
+              <td>2</td>
+              <td>0</td>
+              <td>
+                <button class="view-link" type="button" aria-label="查看工程建设总承包股份有限公司的股权关联详情" title="查看详情" data-unit="工程建设总承包股份有限公司">
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="m12.5 12.5 4 4" /></svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <footer class="pagination-bar" aria-label="主列表分页导航">
+        <nav class="pager" aria-label="主列表分页">
+          <button type="button" disabled aria-label="上一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" /></svg></button>
+          <button type="button" aria-current="page" aria-label="第 1 页">1</button>
+          <button type="button" disabled aria-label="下一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5" /></svg></button>
+          <label><select aria-label="主列表每页显示条数"><option selected>10 条/页</option><option>20 条/页</option><option>50 条/页</option></select></label>
+          <label class="jump-label">跳至<input type="number" value="1" min="1" max="1" aria-label="主列表跳转页码" />页</label>
+          <span class="total">共3条</span>
+        </nav>
+      </footer>
+    </main>
+
+    <dialog class="detail-dialog" id="equityDetailDialog" aria-labelledby="detailDialogTitle">
+      <div class="dialog-shell">
+        <header class="dialog-header">
+          <h1 class="dialog-title" id="detailDialogTitle">股权关联详情</h1>
+          <button class="close-button" type="button" id="closeDialogButton" aria-label="关闭股权关联详情" title="关闭">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" /></svg>
+          </button>
+        </header>
+
+        <div class="dialog-body">
+          <section class="detail-search" id="detailSearch" aria-label="详情列表搜索条件">
+            <div class="search-field">
+              <label class="search-label" id="issueTypeLabel">问题类型：</label>
+              <div class="tree-select" id="issueTypeSelect">
+                <div class="tree-select-control">
+                  <button class="tree-select-toggle" id="issueTypeToggle" type="button" aria-labelledby="issueTypeLabel issueTypeValue" aria-haspopup="tree" aria-expanded="false"><span id="issueTypeValue">请选择问题类型</span></button>
+                  <button class="tree-clear" id="issueTypeClear" type="button" aria-label="清空问题类型">×</button>
+                  <button class="tree-arrow" id="issueTypeArrow" type="button" aria-label="展开问题类型选项" tabindex="-1"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5" /></svg></button>
+                </div>
+                <div class="tree-dropdown" id="issueTypeDropdown" role="tree" aria-multiselectable="true" hidden>
+                  <ul class="tree-list">
+                    <li class="tree-branch" data-tree-branch><div class="tree-node" role="treeitem" aria-expanded="true"><button class="tree-branch-toggle" type="button" aria-label="收起股权关系"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5" /></svg></button><input id="type-equity" type="checkbox" data-parent-check /><label for="type-equity">股权关系</label></div><ul class="tree-children" role="group">
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-direct" type="checkbox" value="直接控股" data-leaf-check /><label for="type-direct">直接控股</label></div></li>
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-indirect" type="checkbox" value="间接控股" data-leaf-check /><label for="type-indirect">间接控股</label></div></li>
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-share" type="checkbox" value="参股关系" data-leaf-check /><label for="type-share">参股关系</label></div></li>
+                    </ul></li>
+                    <li class="tree-branch" data-tree-branch><div class="tree-node" role="treeitem" aria-expanded="true"><button class="tree-branch-toggle" type="button" aria-label="收起人员关系"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5" /></svg></button><input id="type-person" type="checkbox" data-parent-check /><label for="type-person">人员关系</label></div><ul class="tree-children" role="group">
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-main-person" type="checkbox" value="主要人员审查" data-leaf-check /><label for="type-main-person">主要人员审查</label></div></li>
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-natural" type="checkbox" value="自然人股东审查" data-leaf-check /><label for="type-natural">自然人股东审查</label></div></li>
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-company" type="checkbox" value="法人股东审查" data-leaf-check /><label for="type-company">法人股东审查</label></div></li>
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-manage" type="checkbox" value="管理关系审查" data-leaf-check /><label for="type-manage">管理关系审查</label></div></li>
+                    </ul></li>
+                    <li class="tree-branch" data-tree-branch><div class="tree-node" role="treeitem" aria-expanded="true"><button class="tree-branch-toggle" type="button" aria-label="收起信息相同"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5" /></svg></button><input id="type-info" type="checkbox" data-parent-check /><label for="type-info">信息相同</label></div><ul class="tree-children" role="group">
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-address" type="checkbox" value="注册地址审查" data-leaf-check /><label for="type-address">注册地址审查</label></div></li>
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-phone" type="checkbox" value="注册电话审查" data-leaf-check /><label for="type-phone">注册电话审查</label></div></li>
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-email" type="checkbox" value="注册邮箱审查" data-leaf-check /><label for="type-email">注册邮箱审查</label></div></li>
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-report-phone" type="checkbox" value="年报电话审查" data-leaf-check /><label for="type-report-phone">年报电话审查</label></div></li>
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-report-email" type="checkbox" value="年报邮箱审查" data-leaf-check /><label for="type-report-email">年报邮箱审查</label></div></li>
+                      <li><div class="tree-node" role="treeitem"><span class="tree-leaf-spacer"></span><input id="type-report-address" type="checkbox" value="年报地址审查" data-leaf-check /><label for="type-report-address">年报地址审查</label></div></li>
+                    </ul></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <button class="search-button" id="detailSearchButton" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="m12.5 12.5 4 4" /></svg>搜索</button>
+            <button class="search-collapse" id="detailSearchCollapse" type="button" aria-label="收起搜索条件" aria-expanded="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5" /></svg></button>
+          </section>
+          <section class="table-wrap detail-table-wrap" aria-label="股权关联问题列表">
+            <table class="detail-table">
+              <caption id="detailTableCaption" hidden>股权关联问题明细</caption>
+              <colgroup><col /><col /><col /><col /><col /></colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">序号</th>
+                  <th scope="col">关联单位</th>
+                  <th scope="col">问题类型</th>
+                  <th scope="col">风险等级</th>
+                  <th scope="col">关联路径</th>
+                </tr>
+              </thead>
+              <tbody id="detailTableBody"></tbody>
+            </table>
+          </section>
+        </div>
+
+        <footer class="dialog-footer" aria-label="详情列表分页导航">
+          <nav class="pager" aria-label="详情列表分页">
+            <button type="button" disabled aria-label="上一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" /></svg></button>
+            <button type="button" aria-current="page" aria-label="第 1 页">1</button>
+            <button type="button" disabled aria-label="下一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5" /></svg></button>
+            <label><select aria-label="详情列表每页显示条数"><option selected>10 条/页</option><option>20 条/页</option><option>50 条/页</option></select></label>
+            <label class="jump-label">跳至<input type="number" value="1" min="1" max="1" aria-label="详情列表跳转页码" />页</label>
+            <span class="total" id="detailTotal">共0条</span>
+          </nav>
+        </footer>
+      </div>
+    </dialog>
+
+    <script src="../雷同关系矩阵/matrix-data.js"></script>
+    <script src="../雷同关系矩阵/pair-filter.js"></script>
+    <script src="../unit-filter.js"></script>
+    <script>
+      const detailData = {
+        "广西大昌建设有限公司": [
+          {
+            relatedUnit: "广西共达建设工程有限公司",
+            issueType: "主要人员审查",
+            riskLevel: "中",
+            relationPath: ["【李元华】", "广西大昌建设有限公司 ← 历史任职 — 李元华", "广西共达建设工程有限公司 ← 历史任职 — 李元华"],
+            evidence: "广西大昌建设有限公司、广西共达建设工程有限公司单位之间存在共同的历史任职（李元华）。"
+          },
+          {
+            relatedUnit: "广西共达建设工程有限公司",
+            issueType: "年报电话审查",
+            riskLevel: "中",
+            relationPath: ["【18677631068】", "广西大昌建设有限公司 ← [2016年]年报电话 — 18677631068", "广西共达建设工程有限公司 ← [2018年、2019年]年报电话 — 18677631068"],
+            evidence: "广西大昌建设有限公司[2016年]和广西共达建设工程有限公司[2018年、2019年]之间年报中存在相同的电话：18677631068。"
+          },
+          {
+            relatedUnit: "广西共达建设工程有限公司",
+            issueType: "年报邮箱审查",
+            riskLevel: "中",
+            relationPath: ["【1944756344@qq.com】", "广西大昌建设有限公司 ← [2018年、2016年、2017年]年报邮箱 — 1944756344@qq.com", "广西共达建设工程有限公司 ← [2018年、2019年]年报邮箱 — 1944756344@qq.com"],
+            evidence: "广西大昌建设有限公司[2018年、2016年、2017年]和广西共达建设工程有限公司[2018年、2019年]之间年报中存在相同的邮箱：1944756344@qq.com。"
+          },
+          {
+            relatedUnit: "广西共达建设工程有限公司",
+            issueType: "间接控股",
+            riskLevel: "中",
+            relationPath: ["【广西大昌建设有限公司 - 广西共达建设工程有限公司】", "广西大昌建设有限公司 <-历史持股- 李元华 -97.00%-> 广西共达建设工程有限公司"],
+            evidence: "广西大昌建设有限公司和广西共达建设工程有限公司单位之间存在相同的股权单位（李元华）。"
+          }
+        ],
+        "中建科工集团有限公司": [
+          {
+            relatedUnit: "中国建筑第四工程局有限公司",
+            issueType: "主要人员审查",
+            riskLevel: "高",
+            relationPath: ["【尹秀萍】", "中建科工集团有限公司 ← 董事 — 尹秀萍", "中国建筑第四工程局有限公司 ← 董事 — 尹秀萍"],
+            evidence: "中建科工集团有限公司、中国建筑第四工程局有限公司单位之间存在共同的董事（尹秀萍）。"
+          },
+          {
+            relatedUnit: "中国建筑第四工程局有限公司",
+            issueType: "主要人员审查",
+            riskLevel: "高",
+            relationPath: ["【周勇】", "中建科工集团有限公司 ← 董事 — 周勇", "中国建筑第四工程局有限公司 ← 董事 — 周勇"],
+            evidence: "中建科工集团有限公司、中国建筑第四工程局有限公司单位之间存在共同的董事（周勇）。"
+          },
+          {
+            relatedUnit: "中国建筑第四工程局有限公司",
+            issueType: "主要人员审查",
+            riskLevel: "高",
+            relationPath: ["【李方升】", "中建科工集团有限公司 ← 董事 — 李方升", "中国建筑第四工程局有限公司 ← 董事 — 李方升"],
+            evidence: "中建科工集团有限公司、中国建筑第四工程局有限公司单位之间存在共同的董事（李方升）。"
+          },
+          {
+            relatedUnit: "中国建筑第四工程局有限公司",
+            issueType: "主要人员审查",
+            riskLevel: "高",
+            relationPath: ["【周鹏华】", "中建科工集团有限公司 ← 董事 — 周鹏华", "中国建筑第四工程局有限公司 ← 董事 — 周鹏华"],
+            evidence: "中建科工集团有限公司、中国建筑第四工程局有限公司单位之间存在共同的董事（周鹏华）。"
+          },
+          {
+            relatedUnit: "中国建筑第四工程局有限公司",
+            issueType: "参股关系",
+            riskLevel: "低",
+            relationPath: ["【中建科工集团有限公司 - 中国建筑第四工程局有限公司】", "中建科工集团有限公司 <-8.00%- 中国建筑第四工程局有限公司"],
+            evidence: "中国建筑第四工程局有限公司参股了中建科工集团有限公司，持股比例为8.00%。"
+          },
+          {
+            relatedUnit: "中国建筑一局（集团）有限公司",
+            issueType: "参股关系",
+            riskLevel: "低",
+            relationPath: ["【中国建筑一局（集团）有限公司 - 中建科工集团有限公司】", "中国建筑一局（集团）有限公司 -6.00%-> 中建科工集团有限公司"],
+            evidence: "中国建筑一局（集团）有限公司参股了中建科工集团有限公司，持股比例为6.00%。"
+          },
+          {
+            relatedUnit: "中国建筑第八工程局有限公司",
+            issueType: "参股关系",
+            riskLevel: "低",
+            relationPath: ["【中建科工集团有限公司 - 中国建筑第八工程局有限公司】", "中建科工集团有限公司 <-6.00%- 中国建筑第八工程局有限公司"],
+            evidence: "中国建筑第八工程局有限公司参股了中建科工集团有限公司，持股比例为6.00%。"
+          }
+        ],
+        "工程建设总承包股份有限公司": [
+          {
+            relatedUnit: "建投第四建设有限公司",
+            issueType: "主要人员审查",
+            riskLevel: "高",
+            relationPath: ["【李兴奎】", "工程建设总承包股份有限公司 ← 董事 — 李兴奎", "建投第四建设有限公司 ← 董事 — 李兴奎"],
+            evidence: "工程建设总承包股份有限公司、建投第四建设有限公司单位之间存在共同的董事（李兴奎）。"
+          },
+          {
+            relatedUnit: "建投第四建设有限公司",
+            issueType: "主要人员审查",
+            riskLevel: "高",
+            relationPath: ["【赵琼华】", "工程建设总承包股份有限公司 ← 董事 — 赵琼华", "建投第四建设有限公司 ← 董事 — 赵琼华"],
+            evidence: "工程建设总承包股份有限公司、建投第四建设有限公司单位之间存在共同的董事（赵琼华）。"
+          }
+        ]
+      };
+
+      const detailDialog = document.getElementById("equityDetailDialog");
+      const dialogTitle = document.getElementById("detailDialogTitle");
+      const detailTableCaption = document.getElementById("detailTableCaption");
+      const detailTableBody = document.getElementById("detailTableBody");
+      const detailTotal = document.getElementById("detailTotal");
+      const closeDialogButton = document.getElementById("closeDialogButton");
+      const viewButtons = document.querySelectorAll(".view-link");
+      const detailSearch = document.getElementById("detailSearch");
+      const detailSearchButton = document.getElementById("detailSearchButton");
+      const detailSearchCollapse = document.getElementById("detailSearchCollapse");
+      const issueTypeSelect = document.getElementById("issueTypeSelect");
+      const issueTypeToggle = document.getElementById("issueTypeToggle");
+      const issueTypeArrow = document.getElementById("issueTypeArrow");
+      const issueTypeDropdown = document.getElementById("issueTypeDropdown");
+      const issueTypeValue = document.getElementById("issueTypeValue");
+      const issueTypeClear = document.getElementById("issueTypeClear");
+      const leafChecks = [...issueTypeSelect.querySelectorAll("[data-leaf-check]")];
+      let returnFocusTarget = null;
+      let activeUnitName = "";
+
+      function selectedIssueTypes() { return leafChecks.filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value); }
+
+      function updateTreeSummary() {
+        const selected = selectedIssueTypes();
+        issueTypeValue.textContent = selected.length === 0 ? "请选择问题类型" : selected.length <= 2 ? selected.join("、") : `已选择${selected.length}项`;
+        issueTypeSelect.classList.toggle("has-value", selected.length > 0);
+        issueTypeSelect.querySelectorAll("[data-tree-branch]").forEach((branch) => {
+          const parent = branch.querySelector("[data-parent-check]");
+          const children = [...branch.querySelectorAll("[data-leaf-check]")];
+          const checkedCount = children.filter((checkbox) => checkbox.checked).length;
+          parent.checked = checkedCount === children.length;
+          parent.indeterminate = checkedCount > 0 && checkedCount < children.length;
+        });
+      }
+
+      function setTreeOpen(open) {
+        issueTypeDropdown.hidden = !open;
+        issueTypeSelect.classList.toggle("is-open", open);
+        issueTypeToggle.setAttribute("aria-expanded", String(open));
+        issueTypeArrow.setAttribute("aria-label", open ? "收起问题类型选项" : "展开问题类型选项");
+      }
+
+      function renderDetailRows(unitName, issueTypes = []) {
+        const sourceRows = detailData[unitName] ?? [];
+        const rows = issueTypes.length === 0 ? sourceRows : sourceRows.filter((item) => issueTypes.includes(item.issueType));
+        detailTableBody.replaceChildren();
+
+        rows.forEach((item, index) => {
+          const row = document.createElement("tr");
+          const values = [index + 1, item.relatedUnit, item.issueType, item.riskLevel, item.relationPath];
+
+          values.forEach((value, columnIndex) => {
+            const cell = document.createElement("td");
+
+            if (columnIndex === 4) {
+              cell.className = "relation-path-cell";
+              value.forEach((line) => {
+                const lineElement = document.createElement("span");
+                lineElement.className = "relation-path-line";
+                lineElement.textContent = line;
+                lineElement.title = line;
+                cell.appendChild(lineElement);
+              });
+            } else {
+              cell.textContent = value;
+              if (columnIndex === 1) cell.title = value;
+            }
+
+            row.appendChild(cell);
+          });
+
+          detailTableBody.appendChild(row);
+        });
+
+        if (rows.length === 0) {
+          const emptyRow = document.createElement("tr");
+          emptyRow.className = "detail-empty";
+          const emptyCell = document.createElement("td");
+          emptyCell.colSpan = 5;
+          emptyCell.textContent = "暂无符合条件的数据";
+          emptyRow.appendChild(emptyCell);
+          detailTableBody.appendChild(emptyRow);
+        }
+
+        detailTableCaption.textContent = `${unitName}股权关联问题明细`;
+        detailTotal.textContent = `共${rows.length}条`;
+      }
+
+      viewButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          returnFocusTarget = button;
+          activeUnitName = button.dataset.unit;
+          dialogTitle.textContent = `${button.dataset.unit}股权关联详情`;
+          leafChecks.forEach((checkbox) => { checkbox.checked = false; });
+          updateTreeSummary();
+          setTreeOpen(false);
+          renderDetailRows(activeUnitName);
+          detailDialog.showModal();
+        });
+      });
+
+      issueTypeToggle.addEventListener("click", () => setTreeOpen(issueTypeDropdown.hidden));
+      issueTypeArrow.addEventListener("click", () => setTreeOpen(issueTypeDropdown.hidden));
+      issueTypeSelect.querySelectorAll("[data-parent-check]").forEach((parent) => {
+        parent.addEventListener("change", () => {
+          parent.closest("[data-tree-branch]").querySelectorAll("[data-leaf-check]").forEach((checkbox) => { checkbox.checked = parent.checked; });
+          updateTreeSummary();
+        });
+      });
+      leafChecks.forEach((checkbox) => checkbox.addEventListener("change", updateTreeSummary));
+      issueTypeSelect.querySelectorAll(".tree-branch-toggle").forEach((toggle) => {
+        toggle.addEventListener("click", () => {
+          const branch = toggle.closest("[data-tree-branch]");
+          const collapsed = branch.classList.toggle("is-collapsed");
+          branch.querySelector('[role="treeitem"]').setAttribute("aria-expanded", String(!collapsed));
+          toggle.setAttribute("aria-label", `${collapsed ? "展开" : "收起"}${branch.querySelector("label").textContent}`);
+        });
+      });
+      issueTypeClear.addEventListener("click", () => { leafChecks.forEach((checkbox) => { checkbox.checked = false; }); updateTreeSummary(); renderDetailRows(activeUnitName); });
+      detailSearchButton.addEventListener("click", () => { renderDetailRows(activeUnitName, selectedIssueTypes()); setTreeOpen(false); });
+      detailSearchCollapse.addEventListener("click", () => {
+        const collapsed = detailSearch.classList.toggle("is-collapsed");
+        detailSearchCollapse.setAttribute("aria-expanded", String(!collapsed));
+        detailSearchCollapse.setAttribute("aria-label", collapsed ? "展开搜索条件" : "收起搜索条件");
+        setTreeOpen(false);
+      });
+      document.addEventListener("click", (event) => { if (!issueTypeSelect.contains(event.target)) setTreeOpen(false); });
+      issueTypeSelect.addEventListener("keydown", (event) => { if (event.key === "Escape") { setTreeOpen(false); issueTypeToggle.focus(); } });
+
+      closeDialogButton.addEventListener("click", () => detailDialog.close());
+
+      detailDialog.addEventListener("click", (event) => {
+        if (event.target !== detailDialog) return;
+        const bounds = detailDialog.getBoundingClientRect();
+        const clickedBackdrop = event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+        if (clickedBackdrop) detailDialog.close();
+      });
+
+      detailDialog.addEventListener("close", () => returnFocusTarget?.focus());
+
+      const previewMatch = window.location.hash.match(/^#equity-detail(?:-(\d+))?$/);
+      if (previewMatch) {
+        const previewIndex = Math.max(0, Number(previewMatch[1] ?? 1) - 1);
+        viewButtons[previewIndex]?.click();
+      }
+    </script>
+  </body>
+</html>

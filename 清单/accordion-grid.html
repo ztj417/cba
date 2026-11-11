@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>雷同错误分析</title>
+    <style>
+      :root { color-scheme: light; font-family: "PingFang SC", Helvetica, Arial, Verdana, "Microsoft YaHei", sans-serif; font-synthesis: none; --primary: #2590eb; --primary-hover: #147dd4; --text: #5c5c5c; --muted: #858585; --line: #ebebeb; --stripe: #f4f9fe; --header: #fafafa; --control-border: #d6d6d6; }
+      * { box-sizing: border-box; }
+      html, body { width: 100%; min-width: 760px; min-height: 100%; margin: 0; background: #fff; color: var(--text); }
+      body { overflow: auto; font-size: 14px; line-height: 30px; }
+      button, select, input { font: inherit; }
+      button, select, input { -webkit-tap-highlight-color: transparent; }
+      ::selection { color: #fff; background: var(--primary); }
+      .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+      .page { min-height: 100vh; padding: 20px 28px 30px; }
+      .page-title { margin: 0; font-size: 0; }
+      .accordion-list { display: grid; gap: 24px; }
+      .accordion-item { min-width: 980px; }
+      .accordion-heading { margin: 0; }
+      .accordion-trigger { display: flex; width: 100%; height: 58px; align-items: center; justify-content: space-between; padding: 0 12px 0 10px; border: 0; border-bottom: 1px solid var(--primary); background: #fff; color: var(--primary); cursor: pointer; text-align: left; }
+      .accordion-trigger:hover { background: #fbfdff; color: var(--primary-hover); }
+      .accordion-trigger:focus-visible, .pager button:focus-visible, .pager select:focus-visible, .pager input:focus-visible { outline: 2px solid rgba(37, 144, 235, 0.45); outline-offset: -3px; }
+      .accordion-label { display: inline-flex; min-width: 0; align-items: center; gap: 16px; font-size: 16px; font-weight: 400; line-height: 24px; }
+      .accordion-index { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+      .accordion-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .accordion-chevron { width: 18px; height: 18px; flex: 0 0 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; transition: transform 220ms cubic-bezier(0.2, 0.75, 0.25, 1); }
+      .accordion-trigger[aria-expanded="false"] .accordion-chevron { transform: rotate(-90deg); }
+      .accordion-panel { overflow: hidden; }
+      .accordion-panel[hidden] { display: none; }
+      .accordion-panel-inner { overflow: hidden; }
+      .table-wrap { width: 100%; overflow-x: auto; }
+      .data-table { width: 100%; min-width: 980px; border: 1px solid var(--line); border-top: 0; border-collapse: collapse; table-layout: fixed; }
+      .data-table th, .data-table td { height: 41px; padding: 9px 12px; overflow: hidden; border-bottom: 1px solid var(--line); color: var(--text); text-align: left; text-overflow: clip; white-space: nowrap; vertical-align: middle; font-size: 14px; font-weight: 400; line-height: 22px; }
+      .data-table th { background: var(--header); color: var(--muted); }
+      .data-table tbody tr:nth-child(even) td { background: var(--stripe); }
+      .data-table tbody tr.is-hit td { background: #fff7e8; }
+      .data-table td { white-space: pre-line; }
+      .data-table tbody tr { transition: background-color 160ms ease-out; }
+      .data-table tbody tr:hover td { background: #edf6fd; }
+      .data-table .empty-row td { height: 96px; background: #fff; color: #a0a0a0; text-align: center; }
+      .pagination-bar { display: flex; min-height: 53px; align-items: flex-start; justify-content: flex-end; padding: 8px 0 17px; }
+      .pager { display: flex; align-items: center; gap: 4px; color: var(--text); line-height: 28px; white-space: nowrap; }
+      .pager button, .pager select, .pager input { height: 28px; border: 1px solid var(--control-border); border-radius: 4px; background: #fff; color: var(--text); }
+      .pager button { display: inline-grid; min-width: 28px; padding: 0 6px; cursor: pointer; place-items: center; }
+      .pager button[aria-current="page"] { border-color: var(--primary); color: var(--primary); }
+      .pager button:disabled { color: #c9cdd2; cursor: not-allowed; }
+      .pager svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+      .pager label { display: inline-flex; align-items: center; gap: 4px; }
+      .pager select { width: 54px; margin-left: 4px; padding: 0 4px; cursor: pointer; }
+      .jump-label { margin-left: 12px; }
+      .pager input { width: 36px; padding: 0 4px; text-align: center; appearance: textfield; }
+      .pager input::-webkit-inner-spin-button, .pager input::-webkit-outer-spin-button { margin: 0; appearance: none; }
+      .total { margin-left: 12px; }
+      .link-btn { display: inline-block; padding: 0; border: 0; background: none; color: var(--primary); cursor: pointer; font-size: 14px; line-height: 22px; text-decoration: none; text-underline-offset: 3px; }
+      .link-btn:hover { color: var(--primary-hover); text-decoration: underline; }
+      .link-btn:focus-visible, .detail-dialog-close:focus-visible { outline: 2px solid rgba(37, 144, 235, 0.45); outline-offset: 3px; }
+      .detail-dialog { width: min(1480px, calc(100vw - 64px)); height: min(760px, calc(100vh - 64px)); max-width: none; max-height: none; padding: 0; overflow: hidden; border: 0; border-radius: 4px; background: #fff; box-shadow: 0 16px 48px rgba(31, 52, 72, 0.22); color: var(--text); }
+      .detail-dialog::backdrop { background: rgba(25, 39, 52, 0.48); }
+      .detail-dialog-shell { display: grid; height: 100%; grid-template-rows: 52px minmax(0, 1fr); }
+      .detail-dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 0 16px 0 20px; border-bottom: 1px solid var(--line); background: #fff; }
+      .detail-dialog-title { margin: 0; color: #4d4d4d; font-size: 16px; font-weight: 400; line-height: 24px; }
+      .detail-dialog-close { display: inline-grid; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: #7b7b7b; cursor: pointer; place-items: center; }
+      .detail-dialog-close:hover { background: #f3f6f8; color: var(--primary); }
+      .detail-dialog-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.7; }
+      .detail-dialog-frame { width: 100%; height: 100%; border: 0; background: #fff; }
+      [hidden] { display: none !important; }
+      @media (max-width: 900px) { .page { padding-right: 16px; padding-left: 16px; } .detail-dialog { width: calc(100vw - 24px); height: calc(100vh - 24px); } }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="雷同错误分析">
+      <h1 class="page-title">雷同错误分析</h1>
+      <section class="accordion-list" data-accordion-list data-single-open="false" aria-label="雷同错误分析分组">
+        <article class="accordion-item" data-accordion-item data-page-size="10">
+  <h2 class="accordion-heading">
+    <button class="accordion-trigger" id="accordion-trigger-1" type="button" aria-expanded="true" aria-controls="accordion-panel-1">
+      <span class="accordion-label"><span class="accordion-index">01</span><span class="accordion-title">定额错套错误雷同</span></span>
+      <svg class="accordion-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
+    </button>
+  </h2>
+  <div class="accordion-panel" id="accordion-panel-1">
+    <div class="accordion-panel-inner">
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">定额错套错误雷同列表</caption>
+          <colgroup><col style="width:5%" /><col style="width:15%" /><col style="width:15%" /><col style="width:9%" /><col style="width:20%" /><col style="width:28%" /><col style="width:23%" /></colgroup>
+          <thead><tr><th scope="col">序号</th><th scope="col">单位名称</th><th scope="col">关联单位名称</th><th scope="col">定额编码</th><th scope="col">定额名称</th><th scope="col">清单特征</th><th scope="col">雷同错误内容</th></tr></thead>
+          <tbody><tr data-row-index="0"><td title="1">1</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="2-10-320">2-10-320</td><td title="给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75">给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN75
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN75
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求</td><td title="定额【2-10-320 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75】中【安装部位】与清单特征不符，或定额与标准定额不同">定额【2-10-320 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75】中【安装部位】与清单特征不符，或定额与标准定额不同</td></tr>
+<tr data-row-index="1"><td title="2">2</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="2-10-321">2-10-321</td><td title="给排水工程 室外塑料排水管(粘接) 外径(mm)以内 110">给排水工程 室外塑料排水管(粘接) 外径(mm)以内 110</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN110
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN110
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求</td><td title="定额【2-10-321 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 110】中【规格】与清单特征不符，或定额与标准定额不同">定额【2-10-321 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 110】中【规格】与清单特征不符，或定额与标准定额不同</td></tr>
+<tr data-row-index="2"><td title="3">3</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="2-10-322">2-10-322</td><td title="给排水工程 室外塑料排水管(粘接) 外径(mm)以内 160">给排水工程 室外塑料排水管(粘接) 外径(mm)以内 160</td><td title="1.安装部位:室外
+2.介质:水
+3.材质:UPVC
+4.规格:DN160
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:闭水试验
+7.其余应符合设计及规范要求">1.安装部位:室外
+2.介质:水
+3.材质:UPVC
+4.规格:DN160
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:闭水试验
+7.其余应符合设计及规范要求</td><td title="定额【2-10-322 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 160】中【介质】与清单特征不符，或定额与标准定额不同">定额【2-10-322 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 160】中【介质】与清单特征不符，或定额与标准定额不同</td></tr>
+<tr data-row-index="3"><td title="4">4</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="2-10-334">2-10-334</td><td title="给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75">给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN75
+5.连接形式:橡胶圈接口
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN75
+5.连接形式:橡胶圈接口
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求</td><td title="定额【2-10-334 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75】中【连接形式】与清单特征不符，或定额与标准定额不同">定额【2-10-334 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75】中【连接形式】与清单特征不符，或定额与标准定额不同</td></tr>
+<tr data-row-index="4"><td title="5">5</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="2-10-335">2-10-335</td><td title="给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 110">给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 110</td><td title="1.安装部位:室外
+2.介质:水
+3.材质:UPVC
+4.规格:DN110
+5.连接形式:橡胶圈接口
+6.压力试验及吹、洗设计要求:闭水试验
+7.其余应符合设计及规范要求">1.安装部位:室外
+2.介质:水
+3.材质:UPVC
+4.规格:DN110
+5.连接形式:橡胶圈接口
+6.压力试验及吹、洗设计要求:闭水试验
+7.其余应符合设计及规范要求</td><td title="定额【2-10-335 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 110】中【材质】与清单特征不符，或定额与标准定额不同">定额【2-10-335 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 110】中【材质】与清单特征不符，或定额与标准定额不同</td></tr>
+<tr data-row-index="5"><td title="6">6</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="2-10-336">2-10-336</td><td title="给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 160">给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 160</td><td title="1.安装部位:室外
+2.介质:水
+3.材质:UPVC
+4.规格:DN160
+5.连接形式:橡胶圈接口
+6.压力试验及吹、洗设计要求:闭水试验
+7.其余应符合设计及规范要求">1.安装部位:室外
+2.介质:水
+3.材质:UPVC
+4.规格:DN160
+5.连接形式:橡胶圈接口
+6.压力试验及吹、洗设计要求:闭水试验
+7.其余应符合设计及规范要求</td><td title="定额【2-10-336 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 160】中【安装部位】与清单特征不符，或定额与标准定额不同">定额【2-10-336 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 160】中【安装部位】与清单特征不符，或定额与标准定额不同</td></tr>
+<tr data-row-index="6"><td title="7">7</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="2-10-352">2-10-352</td><td title="给排水工程 室外承插铸铁排水管 公称直径(mm)以内 75">给排水工程 室外承插铸铁排水管 公称直径(mm)以内 75</td><td title="1.安装部位:室外
+2.介质:水
+3.材质:柔性接口铸铁管
+4.规格:DN75
+5.连接形式:承插连接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求">1.安装部位:室外
+2.介质:水
+3.材质:柔性接口铸铁管
+4.规格:DN75
+5.连接形式:承插连接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求</td><td title="定额【2-10-352 给排水工程 室外承插铸铁排水管 公称直径(mm)以内 75】中【材质】与清单特征不符，或定额与标准定额不同">定额【2-10-352 给排水工程 室外承插铸铁排水管 公称直径(mm)以内 75】中【材质】与清单特征不符，或定额与标准定额不同</td></tr>
+<tr data-row-index="7"><td title="8">8</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="2-10-353">2-10-353</td><td title="给排水工程 室外承插铸铁排水管 公称直径(mm)以内 100">给排水工程 室外承插铸铁排水管 公称直径(mm)以内 100</td><td title="1.安装部位:室外
+2.介质:水
+3.材质:柔性接口铸铁管
+4.规格:DN100
+5.连接形式:承插连接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求">1.安装部位:室外
+2.介质:水
+3.材质:柔性接口铸铁管
+4.规格:DN100
+5.连接形式:承插连接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求</td><td title="定额【2-10-353 给排水工程 室外承插铸铁排水管 公称直径(mm)以内 100】中【规格】与清单特征不符，或定额与标准定额不同">定额【2-10-353 给排水工程 室外承插铸铁排水管 公称直径(mm)以内 100】中【规格】与清单特征不符，或定额与标准定额不同</td></tr>
+<tr data-row-index="8"><td title="9">9</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="2-10-320">2-10-320</td><td title="给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75">给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN75
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN75
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求</td><td title="定额【2-10-320 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75】与清单项目特征不对应，重复套用同一定额">定额【2-10-320 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75】与清单项目特征不对应，重复套用同一定额</td></tr>
+<tr data-row-index="9"><td title="10">10</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="2-10-334">2-10-334</td><td title="给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75">给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN110
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN110
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求</td><td title="定额【2-10-334 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75】中【连接形式】与清单特征不符，或定额与标准定额不同">定额【2-10-334 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75】中【连接形式】与清单特征不符，或定额与标准定额不同</td></tr></tbody>
+        </table>
+      </div>
+      <footer class="pagination-bar" aria-label="定额错套错误雷同分页">
+        <nav class="pager" aria-label="定额错套错误雷同分页导航">
+          <button class="page-prev" type="button" aria-label="上一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" /></svg></button>
+          <button class="page-current" type="button" aria-current="page" aria-label="当前页">1</button>
+          <button class="page-next" type="button" aria-label="下一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5" /></svg></button>
+          <label><select class="page-size" aria-label="每页显示条数"><option selected>10</option><option>20</option><option>50</option></select><span>条/页</span></label>
+          <label class="jump-label">跳至<input class="page-jump" type="number" value="1" min="1" max="1" aria-label="跳转页码" />页</label>
+          <span class="total">共10条</span>
+        </nav>
+      </footer>
+    </div>
+  </div>
+</article>
+<article class="accordion-item" data-accordion-item data-page-size="10">
+  <h2 class="accordion-heading">
+    <button class="accordion-trigger" id="accordion-trigger-2" type="button" aria-expanded="true" aria-controls="accordion-panel-2">
+      <span class="accordion-label"><span class="accordion-index">02</span><span class="accordion-title">定额工程量错误雷同</span></span>
+      <svg class="accordion-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
+    </button>
+  </h2>
+  <div class="accordion-panel" id="accordion-panel-2">
+    <div class="accordion-panel-inner">
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">定额工程量错误雷同列表</caption>
+          <colgroup><col style="width:5%" /><col style="width:16%" /><col style="width:16%" /><col style="width:9%" /><col style="width:20%" /><col style="width:9%" /><col style="width:9%" /><col style="width:32%" /></colgroup>
+          <thead><tr><th scope="col">序号</th><th scope="col">单位名称</th><th scope="col">关联单位名称</th><th scope="col">定额编码</th><th scope="col">定额名称</th><th scope="col">清单工程量</th><th scope="col">定额工程量</th><th scope="col">雷同错误内容</th></tr></thead>
+          <tbody><tr data-row-index="0"><td title="1">1</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="2-10-320">2-10-320</td><td title="给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75">给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75</td><td title="86.40">86.40</td><td title="95.60">95.60</td><td title="定额【2-10-320 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75】工程量 95.60 与清单工程量 86.40 不符，或与标准定额工程量不同">定额【2-10-320 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75】工程量 95.60 与清单工程量 86.40 不符，或与标准定额工程量不同</td></tr>
+<tr data-row-index="1"><td title="2">2</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="2-10-321">2-10-321</td><td title="给排水工程 室外塑料排水管(粘接) 外径(mm)以内 110">给排水工程 室外塑料排水管(粘接) 外径(mm)以内 110</td><td title="120.00">120.00</td><td title="132.40">132.40</td><td title="定额【2-10-321 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 110】工程量 132.40 与清单工程量 120.00 不符，或与标准定额工程量不同">定额【2-10-321 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 110】工程量 132.40 与清单工程量 120.00 不符，或与标准定额工程量不同</td></tr>
+<tr data-row-index="2"><td title="3">3</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="2-10-322">2-10-322</td><td title="给排水工程 室外塑料排水管(粘接) 外径(mm)以内 160">给排水工程 室外塑料排水管(粘接) 外径(mm)以内 160</td><td title="45.60">45.60</td><td title="52.80">52.80</td><td title="定额【2-10-322 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 160】工程量 52.80 与清单工程量 45.60 不符，或与标准定额工程量不同">定额【2-10-322 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 160】工程量 52.80 与清单工程量 45.60 不符，或与标准定额工程量不同</td></tr>
+<tr data-row-index="3"><td title="4">4</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="2-10-334">2-10-334</td><td title="给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75">给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75</td><td title="210.50">210.50</td><td title="189.30">189.30</td><td title="定额【2-10-334 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75】工程量 189.30 与清单工程量 210.50 不符，或与标准定额工程量不同">定额【2-10-334 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75】工程量 189.30 与清单工程量 210.50 不符，或与标准定额工程量不同</td></tr>
+<tr data-row-index="4"><td title="5">5</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="2-10-335">2-10-335</td><td title="给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 110">给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 110</td><td title="168.20">168.20</td><td title="176.90">176.90</td><td title="定额【2-10-335 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 110】工程量 176.90 与清单工程量 168.20 不符，或与标准定额工程量不同">定额【2-10-335 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 110】工程量 176.90 与清单工程量 168.20 不符，或与标准定额工程量不同</td></tr>
+<tr data-row-index="5"><td title="6">6</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="2-10-336">2-10-336</td><td title="给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 160">给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 160</td><td title="96.00">96.00</td><td title="108.00">108.00</td><td title="定额【2-10-336 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 160】工程量 108.00 与清单工程量 96.00 不符，或与标准定额工程量不同">定额【2-10-336 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 160】工程量 108.00 与清单工程量 96.00 不符，或与标准定额工程量不同</td></tr>
+<tr data-row-index="6"><td title="7">7</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="2-10-352">2-10-352</td><td title="给排水工程 室外承插铸铁排水管 公称直径(mm)以内 75">给排水工程 室外承插铸铁排水管 公称直径(mm)以内 75</td><td title="64.80">64.80</td><td title="72.00">72.00</td><td title="定额【2-10-352 给排水工程 室外承插铸铁排水管 公称直径(mm)以内 75】工程量 72.00 与清单工程量 64.80 不符，或与标准定额工程量不同">定额【2-10-352 给排水工程 室外承插铸铁排水管 公称直径(mm)以内 75】工程量 72.00 与清单工程量 64.80 不符，或与标准定额工程量不同</td></tr>
+<tr data-row-index="7"><td title="8">8</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="2-10-353">2-10-353</td><td title="给排水工程 室外承插铸铁排水管 公称直径(mm)以内 100">给排水工程 室外承插铸铁排水管 公称直径(mm)以内 100</td><td title="88.40">88.40</td><td title="98.60">98.60</td><td title="定额【2-10-353 给排水工程 室外承插铸铁排水管 公称直径(mm)以内 100】工程量 98.60 与清单工程量 88.40 不符，或与标准定额工程量不同">定额【2-10-353 给排水工程 室外承插铸铁排水管 公称直径(mm)以内 100】工程量 98.60 与清单工程量 88.40 不符，或与标准定额工程量不同</td></tr>
+<tr data-row-index="8"><td title="9">9</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="2-10-320">2-10-320</td><td title="给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75">给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75</td><td title="150.00">150.00</td><td title="132.00">132.00</td><td title="定额【2-10-320 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75】工程量 132.00 与清单工程量 150.00 不符，或与标准定额工程量不同">定额【2-10-320 给排水工程 室外塑料排水管(粘接) 外径(mm)以内 75】工程量 132.00 与清单工程量 150.00 不符，或与标准定额工程量不同</td></tr>
+<tr data-row-index="9"><td title="10">10</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="2-10-334">2-10-334</td><td title="给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75">给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75</td><td title="72.30">72.30</td><td title="80.10">80.10</td><td title="定额【2-10-334 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75】工程量 80.10 与清单工程量 72.30 不符，或与标准定额工程量不同">定额【2-10-334 给排水工程 室外塑料排水管(胶圈接口) 外径(mm)以内 75】工程量 80.10 与清单工程量 72.30 不符，或与标准定额工程量不同</td></tr></tbody>
+        </table>
+      </div>
+      <footer class="pagination-bar" aria-label="定额工程量错误雷同分页">
+        <nav class="pager" aria-label="定额工程量错误雷同分页导航">
+          <button class="page-prev" type="button" aria-label="上一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" /></svg></button>
+          <button class="page-current" type="button" aria-current="page" aria-label="当前页">1</button>
+          <button class="page-next" type="button" aria-label="下一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5" /></svg></button>
+          <label><select class="page-size" aria-label="每页显示条数"><option selected>10</option><option>20</option><option>50</option></select><span>条/页</span></label>
+          <label class="jump-label">跳至<input class="page-jump" type="number" value="1" min="1" max="1" aria-label="跳转页码" />页</label>
+          <span class="total">共10条</span>
+        </nav>
+      </footer>
+    </div>
+  </div>
+</article>
+<article class="accordion-item" data-accordion-item data-page-size="10">
+  <h2 class="accordion-heading">
+    <button class="accordion-trigger" id="accordion-trigger-3" type="button" aria-expanded="true" aria-controls="accordion-panel-3">
+      <span class="accordion-label"><span class="accordion-index">03</span><span class="accordion-title">材料和特征不匹配错误雷同</span></span>
+      <svg class="accordion-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
+    </button>
+  </h2>
+  <div class="accordion-panel" id="accordion-panel-3">
+    <div class="accordion-panel-inner">
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">材料和特征不匹配错误雷同列表</caption>
+          <colgroup><col style="width:5%" /><col style="width:14%" /><col style="width:14%" /><col style="width:30%" /><col style="width:10%" /><col style="width:16%" /><col style="width:25%" /></colgroup>
+          <thead><tr><th scope="col">序号</th><th scope="col">单位名称</th><th scope="col">关联单位名称</th><th scope="col">清单特征</th><th scope="col">材料编码</th><th scope="col">材料</th><th scope="col">雷同错误内容</th></tr></thead>
+          <tbody><tr data-row-index="0"><td title="1">1</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN110
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN110
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求</td><td title="040101001">040101001</td><td title="PVC-U 排水管 DN110">PVC-U 排水管 DN110</td><td title="清单特征要求与所用材料【PVC-U 排水管 DN110】不符（材质为 PE），材料与清单特征不匹配，多份清单雷同">清单特征要求与所用材料【PVC-U 排水管 DN110】不符（材质为 PE），材料与清单特征不匹配，多份清单雷同</td></tr>
+<tr data-row-index="1"><td title="2">2</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:PP-R
+4.规格:DN75
+5.连接形式:热熔连接
+6.压力试验及吹、洗设计要求:水压试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:PP-R
+4.规格:DN75
+5.连接形式:热熔连接
+6.压力试验及吹、洗设计要求:水压试验
+7.其余应符合设计及规范要求</td><td title="040101002">040101002</td><td title="PP-R 给水管 DN75">PP-R 给水管 DN75</td><td title="清单特征要求与所用材料【PP-R 给水管 DN75】不符（材质为 PVC-U），材料与清单特征不匹配，多份清单雷同">清单特征要求与所用材料【PP-R 给水管 DN75】不符（材质为 PVC-U），材料与清单特征不匹配，多份清单雷同</td></tr>
+<tr data-row-index="2"><td title="3">3</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="1.安装部位:屋面
+2.介质:水
+3.材质:SBS改性沥青
+4.规格:4mm
+5.连接形式:热熔法
+6.压力试验及吹、洗设计要求:蓄水试验
+7.其余应符合设计及规范要求">1.安装部位:屋面
+2.介质:水
+3.材质:SBS改性沥青
+4.规格:4mm
+5.连接形式:热熔法
+6.压力试验及吹、洗设计要求:蓄水试验
+7.其余应符合设计及规范要求</td><td title="040502003">040502003</td><td title="SBS 改性沥青防水卷材">SBS 改性沥青防水卷材</td><td title="清单特征要求与所用材料【SBS 改性沥青防水卷材】不符（厚度为 3mm 自粘卷材），材料与清单特征不匹配，多份清单雷同">清单特征要求与所用材料【SBS 改性沥青防水卷材】不符（厚度为 3mm 自粘卷材），材料与清单特征不匹配，多份清单雷同</td></tr>
+<tr data-row-index="3"><td title="4">4</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="1.安装部位:室外
+2.介质:水
+3.材质:柔性接口铸铁管
+4.规格:DN100
+5.连接形式:承插连接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求">1.安装部位:室外
+2.介质:水
+3.材质:柔性接口铸铁管
+4.规格:DN100
+5.连接形式:承插连接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求</td><td title="031001004">031001004</td><td title="柔性接口铸铁排水管 DN100">柔性接口铸铁排水管 DN100</td><td title="清单特征要求与所用材料【柔性接口铸铁排水管 DN100】不符（材质为机制排水铸铁管），材料与清单特征不匹配，多份清单雷同">清单特征要求与所用材料【柔性接口铸铁排水管 DN100】不符（材质为机制排水铸铁管），材料与清单特征不匹配，多份清单雷同</td></tr>
+<tr data-row-index="4"><td title="5">5</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="1.安装部位:室外
+2.介质:水
+3.材质:PE双壁波纹管
+4.规格:DN160
+5.连接形式:承插连接
+6.压力试验及吹、洗设计要求:闭水试验
+7.其余应符合设计及规范要求">1.安装部位:室外
+2.介质:水
+3.材质:PE双壁波纹管
+4.规格:DN160
+5.连接形式:承插连接
+6.压力试验及吹、洗设计要求:闭水试验
+7.其余应符合设计及规范要求</td><td title="040101005">040101005</td><td title="PE 双壁波纹管 DN160">PE 双壁波纹管 DN160</td><td title="清单特征要求与所用材料【PE 双壁波纹管 DN160】不符（环刚度不足 SN4），材料与清单特征不匹配，多份清单雷同">清单特征要求与所用材料【PE 双壁波纹管 DN160】不符（环刚度不足 SN4），材料与清单特征不匹配，多份清单雷同</td></tr>
+<tr data-row-index="5"><td title="6">6</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:聚氨酯防水涂料
+4.规格:2mm
+5.连接形式:涂刷
+6.压力试验及吹、洗设计要求:蓄水试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:聚氨酯防水涂料
+4.规格:2mm
+5.连接形式:涂刷
+6.压力试验及吹、洗设计要求:蓄水试验
+7.其余应符合设计及规范要求</td><td title="040502006">040502006</td><td title="聚氨酯防水涂料">聚氨酯防水涂料</td><td title="清单特征要求与所用材料【聚氨酯防水涂料】不符（为单组分丙烯酸涂料），材料与清单特征不匹配，多份清单雷同">清单特征要求与所用材料【聚氨酯防水涂料】不符（为单组分丙烯酸涂料），材料与清单特征不匹配，多份清单雷同</td></tr>
+<tr data-row-index="6"><td title="7">7</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:热镀锌钢管
+4.规格:DN50
+5.连接形式:螺纹连接
+6.压力试验及吹、洗设计要求:水压试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:热镀锌钢管
+4.规格:DN50
+5.连接形式:螺纹连接
+6.压力试验及吹、洗设计要求:水压试验
+7.其余应符合设计及规范要求</td><td title="031001007">031001007</td><td title="热镀锌钢管 DN50">热镀锌钢管 DN50</td><td title="清单特征要求与所用材料【热镀锌钢管 DN50】不符（为焊接钢管），材料与清单特征不匹配，多份清单雷同">清单特征要求与所用材料【热镀锌钢管 DN50】不符（为焊接钢管），材料与清单特征不匹配，多份清单雷同</td></tr>
+<tr data-row-index="7"><td title="8">8</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN75
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:UPVC
+4.规格:DN75
+5.连接形式:粘接
+6.压力试验及吹、洗设计要求:灌水试验
+7.其余应符合设计及规范要求</td><td title="040101008">040101008</td><td title="UPVC 排水管 DN75">UPVC 排水管 DN75</td><td title="清单特征要求与所用材料【UPVC 排水管 DN75】不符（材质为 PE），材料与清单特征不匹配，多份清单雷同">清单特征要求与所用材料【UPVC 排水管 DN75】不符（材质为 PE），材料与清单特征不匹配，多份清单雷同</td></tr>
+<tr data-row-index="8"><td title="9">9</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="1.安装部位:屋面
+2.介质:水
+3.材质:高分子防水卷材
+4.规格:1.5mm
+5.连接形式:自粘
+6.压力试验及吹、洗设计要求:蓄水试验
+7.其余应符合设计及规范要求">1.安装部位:屋面
+2.介质:水
+3.材质:高分子防水卷材
+4.规格:1.5mm
+5.连接形式:自粘
+6.压力试验及吹、洗设计要求:蓄水试验
+7.其余应符合设计及规范要求</td><td title="040502009">040502009</td><td title="高分子防水卷材">高分子防水卷材</td><td title="清单特征要求与所用材料【高分子防水卷材】不符（为沥青油毡），材料与清单特征不匹配，多份清单雷同">清单特征要求与所用材料【高分子防水卷材】不符（为沥青油毡），材料与清单特征不匹配，多份清单雷同</td></tr>
+<tr data-row-index="9"><td title="10">10</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="1.安装部位:室内
+2.介质:水
+3.材质:铜闸阀
+4.规格:DN25
+5.连接形式:螺纹连接
+6.压力试验及吹、洗设计要求:水压试验
+7.其余应符合设计及规范要求">1.安装部位:室内
+2.介质:水
+3.材质:铜闸阀
+4.规格:DN25
+5.连接形式:螺纹连接
+6.压力试验及吹、洗设计要求:水压试验
+7.其余应符合设计及规范要求</td><td title="031001010">031001010</td><td title="铜闸阀 DN25">铜闸阀 DN25</td><td title="清单特征要求与所用材料【铜闸阀 DN25】不符（为铁质闸阀），材料与清单特征不匹配，多份清单雷同">清单特征要求与所用材料【铜闸阀 DN25】不符（为铁质闸阀），材料与清单特征不匹配，多份清单雷同</td></tr></tbody>
+        </table>
+      </div>
+      <footer class="pagination-bar" aria-label="材料和特征不匹配错误雷同分页">
+        <nav class="pager" aria-label="材料和特征不匹配错误雷同分页导航">
+          <button class="page-prev" type="button" aria-label="上一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" /></svg></button>
+          <button class="page-current" type="button" aria-current="page" aria-label="当前页">1</button>
+          <button class="page-next" type="button" aria-label="下一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5" /></svg></button>
+          <label><select class="page-size" aria-label="每页显示条数"><option selected>10</option><option>20</option><option>50</option></select><span>条/页</span></label>
+          <label class="jump-label">跳至<input class="page-jump" type="number" value="1" min="1" max="1" aria-label="跳转页码" />页</label>
+          <span class="total">共10条</span>
+        </nav>
+      </footer>
+    </div>
+  </div>
+</article>
+<article class="accordion-item" data-accordion-item data-page-size="10">
+  <h2 class="accordion-heading">
+    <button class="accordion-trigger" id="accordion-trigger-4" type="button" aria-expanded="true" aria-controls="accordion-panel-4">
+      <span class="accordion-label"><span class="accordion-index">04</span><span class="accordion-title">材料错别字错误雷同</span></span>
+      <svg class="accordion-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
+    </button>
+  </h2>
+  <div class="accordion-panel" id="accordion-panel-4">
+    <div class="accordion-panel-inner">
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">材料错别字错误雷同列表</caption>
+          <colgroup><col style="width:5%" /><col style="width:24%" /><col style="width:24%" /><col style="width:12%" /><col style="width:24%" /><col style="width:35%" /></colgroup>
+          <thead><tr><th scope="col">序号</th><th scope="col">单位名称</th><th scope="col">关联单位名称</th><th scope="col">材料编码</th><th scope="col">材料名称</th><th scope="col">雷同错误内容</th></tr></thead>
+          <tbody><tr data-row-index="0"><td title="1">1</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="040101001">040101001</td><td title="聚氨脂防水涂料">聚氨脂防水涂料</td><td title="材料名称【聚氨脂防水涂料】存在错别字，规范名称应为【聚氨酯防水涂料】，多份清单雷同">材料名称【聚氨脂防水涂料】存在错别字，规范名称应为【聚氨酯防水涂料】，多份清单雷同</td></tr>
+<tr data-row-index="1"><td title="2">2</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="040201002">040201002</td><td title="普通硅酸岩水泥">普通硅酸岩水泥</td><td title="材料名称【普通硅酸岩水泥】存在错别字，规范名称应为【普通硅酸盐水泥】，多份清单雷同">材料名称【普通硅酸岩水泥】存在错别字，规范名称应为【普通硅酸盐水泥】，多份清单雷同</td></tr>
+<tr data-row-index="2"><td title="3">3</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="010301003">010301003</td><td title="镀辛钢管 DN50">镀辛钢管 DN50</td><td title="材料名称【镀辛钢管 DN50】存在错别字，规范名称应为【镀锌钢管 DN50】，多份清单雷同">材料名称【镀辛钢管 DN50】存在错别字，规范名称应为【镀锌钢管 DN50】，多份清单雷同</td></tr>
+<tr data-row-index="3"><td title="4">4</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="040301004">040301004</td><td title="乳胶柒">乳胶柒</td><td title="材料名称【乳胶柒】存在错别字，规范名称应为【乳胶漆】，多份清单雷同">材料名称【乳胶柒】存在错别字，规范名称应为【乳胶漆】，多份清单雷同</td></tr>
+<tr data-row-index="4"><td title="5">5</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="040401005">040401005</td><td title="石膏扳 9.5mm">石膏扳 9.5mm</td><td title="材料名称【石膏扳 9.5mm】存在错别字，规范名称应为【石膏板 9.5mm】，多份清单雷同">材料名称【石膏扳 9.5mm】存在错别字，规范名称应为【石膏板 9.5mm】，多份清单雷同</td></tr>
+<tr data-row-index="5"><td title="6">6</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="010501006">010501006</td><td title="不锈刚管 DN25">不锈刚管 DN25</td><td title="材料名称【不锈刚管 DN25】存在错别字，规范名称应为【不锈钢管 DN25】，多份清单雷同">材料名称【不锈刚管 DN25】存在错别字，规范名称应为【不锈钢管 DN25】，多份清单雷同</td></tr>
+<tr data-row-index="6"><td title="7">7</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="040601007">040601007</td><td title="聚笨乙烯泡沫板">聚笨乙烯泡沫板</td><td title="材料名称【聚笨乙烯泡沫板】存在错别字，规范名称应为【聚苯乙烯泡沫板】，多份清单雷同">材料名称【聚笨乙烯泡沫板】存在错别字，规范名称应为【聚苯乙烯泡沫板】，多份清单雷同</td></tr>
+<tr data-row-index="7"><td title="8">8</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="010701008">010701008</td><td title="电缆桥驾 200×100">电缆桥驾 200×100</td><td title="材料名称【电缆桥驾 200×100】存在错别字，规范名称应为【电缆桥架 200×100】，多份清单雷同">材料名称【电缆桥驾 200×100】存在错别字，规范名称应为【电缆桥架 200×100】，多份清单雷同</td></tr>
+<tr data-row-index="8"><td title="9">9</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="040801009">040801009</td><td title="岩棉保温板">岩棉保温板</td><td title="材料名称【岩棉保温板】存在错别字，规范名称应为【岩棉保温板】，多份清单雷同">材料名称【岩棉保温板】存在错别字，规范名称应为【岩棉保温板】，多份清单雷同</td></tr>
+<tr data-row-index="9"><td title="10">10</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="010901010">010901010</td><td title="铝合全窗">铝合全窗</td><td title="材料名称【铝合全窗】存在错别字，规范名称应为【铝合金窗】，多份清单雷同">材料名称【铝合全窗】存在错别字，规范名称应为【铝合金窗】，多份清单雷同</td></tr></tbody>
+        </table>
+      </div>
+      <footer class="pagination-bar" aria-label="材料错别字错误雷同分页">
+        <nav class="pager" aria-label="材料错别字错误雷同分页导航">
+          <button class="page-prev" type="button" aria-label="上一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" /></svg></button>
+          <button class="page-current" type="button" aria-current="page" aria-label="当前页">1</button>
+          <button class="page-next" type="button" aria-label="下一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5" /></svg></button>
+          <label><select class="page-size" aria-label="每页显示条数"><option selected>10</option><option>20</option><option>50</option></select><span>条/页</span></label>
+          <label class="jump-label">跳至<input class="page-jump" type="number" value="1" min="1" max="1" aria-label="跳转页码" />页</label>
+          <span class="total">共10条</span>
+        </nav>
+      </footer>
+    </div>
+  </div>
+</article>
+<article class="accordion-item" data-accordion-item data-page-size="10">
+  <h2 class="accordion-heading">
+    <button class="accordion-trigger" id="accordion-trigger-5" type="button" aria-expanded="true" aria-controls="accordion-panel-5">
+      <span class="accordion-label"><span class="accordion-index">05</span><span class="accordion-title">材料名称不规范错误雷同</span></span>
+      <svg class="accordion-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
+    </button>
+  </h2>
+  <div class="accordion-panel" id="accordion-panel-5">
+    <div class="accordion-panel-inner">
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">材料名称不规范错误雷同列表</caption>
+          <colgroup><col style="width:5%" /><col style="width:24%" /><col style="width:24%" /><col style="width:12%" /><col style="width:24%" /><col style="width:35%" /></colgroup>
+          <thead><tr><th scope="col">序号</th><th scope="col">单位名称</th><th scope="col">关联单位名称</th><th scope="col">材料编码</th><th scope="col">材料名称</th><th scope="col">雷同错误内容</th></tr></thead>
+          <tbody><tr data-row-index="0"><td title="1">1</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="040101001">040101001</td><td title="PVC管">PVC管</td><td title="材料名称【PVC管】不规范，应按规范名称【硬聚氯乙烯(PVC-U)排水管】填写，多份清单雷同">材料名称【PVC管】不规范，应按规范名称【硬聚氯乙烯(PVC-U)排水管】填写，多份清单雷同</td></tr>
+<tr data-row-index="1"><td title="2">2</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="040201002">040201002</td><td title="水泥">水泥</td><td title="材料名称【水泥】不规范，应按规范名称【普通硅酸盐水泥 P.O 42.5】填写，多份清单雷同">材料名称【水泥】不规范，应按规范名称【普通硅酸盐水泥 P.O 42.5】填写，多份清单雷同</td></tr>
+<tr data-row-index="2"><td title="3">3</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="010301003">010301003</td><td title="钢筋">钢筋</td><td title="材料名称【钢筋】不规范，应按规范名称【热轧带肋钢筋 HRB400】填写，多份清单雷同">材料名称【钢筋】不规范，应按规范名称【热轧带肋钢筋 HRB400】填写，多份清单雷同</td></tr>
+<tr data-row-index="3"><td title="4">4</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="040301004">040301004</td><td title="模板">模板</td><td title="材料名称【模板】不规范，应按规范名称【覆膜木胶合板模板】填写，多份清单雷同">材料名称【模板】不规范，应按规范名称【覆膜木胶合板模板】填写，多份清单雷同</td></tr>
+<tr data-row-index="4"><td title="5">5</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="040401005">040401005</td><td title="电线">电线</td><td title="材料名称【电线】不规范，应按规范名称【铜芯交联聚乙烯绝缘电线 BV】填写，多份清单雷同">材料名称【电线】不规范，应按规范名称【铜芯交联聚乙烯绝缘电线 BV】填写，多份清单雷同</td></tr>
+<tr data-row-index="5"><td title="6">6</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="010501006">010501006</td><td title="沙子">沙子</td><td title="材料名称【沙子】不规范，应按规范名称【中砂】填写，多份清单雷同">材料名称【沙子】不规范，应按规范名称【中砂】填写，多份清单雷同</td></tr>
+<tr data-row-index="6"><td title="7">7</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="040601007">040601007</td><td title="石子">石子</td><td title="材料名称【石子】不规范，应按规范名称【碎石 5~31.5mm】填写，多份清单雷同">材料名称【石子】不规范，应按规范名称【碎石 5~31.5mm】填写，多份清单雷同</td></tr>
+<tr data-row-index="7"><td title="8">8</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="010701008">010701008</td><td title="涂料">涂料</td><td title="材料名称【涂料】不规范，应按规范名称【合成树脂乳液内墙涂料】填写，多份清单雷同">材料名称【涂料】不规范，应按规范名称【合成树脂乳液内墙涂料】填写，多份清单雷同</td></tr>
+<tr data-row-index="8"><td title="9">9</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="040801009">040801009</td><td title="阀门">阀门</td><td title="材料名称【阀门】不规范，应按规范名称【铜闸阀 DN25】填写，多份清单雷同">材料名称【阀门】不规范，应按规范名称【铜闸阀 DN25】填写，多份清单雷同</td></tr>
+<tr data-row-index="9"><td title="10">10</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="010901010">010901010</td><td title="保温管">保温管</td><td title="材料名称【保温管】不规范，应按规范名称【橡塑保温管 δ20mm】填写，多份清单雷同">材料名称【保温管】不规范，应按规范名称【橡塑保温管 δ20mm】填写，多份清单雷同</td></tr></tbody>
+        </table>
+      </div>
+      <footer class="pagination-bar" aria-label="材料名称不规范错误雷同分页">
+        <nav class="pager" aria-label="材料名称不规范错误雷同分页导航">
+          <button class="page-prev" type="button" aria-label="上一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" /></svg></button>
+          <button class="page-current" type="button" aria-current="page" aria-label="当前页">1</button>
+          <button class="page-next" type="button" aria-label="下一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5" /></svg></button>
+          <label><select class="page-size" aria-label="每页显示条数"><option selected>10</option><option>20</option><option>50</option></select><span>条/页</span></label>
+          <label class="jump-label">跳至<input class="page-jump" type="number" value="1" min="1" max="1" aria-label="跳转页码" />页</label>
+          <span class="total">共10条</span>
+        </nav>
+      </footer>
+    </div>
+  </div>
+</article>
+<article class="accordion-item" data-accordion-item data-page-size="10">
+  <h2 class="accordion-heading">
+    <button class="accordion-trigger" id="accordion-trigger-6" type="button" aria-expanded="true" aria-controls="accordion-panel-6">
+      <span class="accordion-label"><span class="accordion-index">06</span><span class="accordion-title">材料规格型号不规范错误雷同</span></span>
+      <svg class="accordion-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
+    </button>
+  </h2>
+  <div class="accordion-panel" id="accordion-panel-6">
+    <div class="accordion-panel-inner">
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">材料规格型号不规范错误雷同列表</caption>
+          <colgroup><col style="width:5%" /><col style="width:16%" /><col style="width:16%" /><col style="width:10%" /><col style="width:16%" /><col style="width:12%" /><col style="width:41%" /></colgroup>
+          <thead><tr><th scope="col">序号</th><th scope="col">单位名称</th><th scope="col">关联单位名称</th><th scope="col">材料编码</th><th scope="col">材料名称</th><th scope="col">材料规格</th><th scope="col">雷同错误内容</th></tr></thead>
+          <tbody><tr data-row-index="0"><td title="1">1</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="040101001">040101001</td><td title="PVC-U 排水管">PVC-U 排水管</td><td title="DN110">DN110</td><td title="材料【PVC-U 排水管】规格型号【DN110】不规范，应标注为【dn110，环刚度 SN8】，多份清单雷同">材料【PVC-U 排水管】规格型号【DN110】不规范，应标注为【dn110，环刚度 SN8】，多份清单雷同</td></tr>
+<tr data-row-index="1"><td title="2">2</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="040201002">040201002</td><td title="镀锌钢管">镀锌钢管</td><td title="DN25">DN25</td><td title="材料【镀锌钢管】规格型号【DN25】不规范，应标注为【DN25，PN1.6】，多份清单雷同">材料【镀锌钢管】规格型号【DN25】不规范，应标注为【DN25，PN1.6】，多份清单雷同</td></tr>
+<tr data-row-index="2"><td title="3">3</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="010301003">010301003</td><td title="商品混凝土">商品混凝土</td><td title="C30">C30</td><td title="材料【商品混凝土】规格型号【C30】不规范，应标注为【C30，P.O 42.5 水泥配制】，多份清单雷同">材料【商品混凝土】规格型号【C30】不规范，应标注为【C30，P.O 42.5 水泥配制】，多份清单雷同</td></tr>
+<tr data-row-index="3"><td title="4">4</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="040301004">040301004</td><td title="铜芯电线">铜芯电线</td><td title="4mm2">4mm2</td><td title="材料【铜芯电线】规格型号【4mm2】不规范，应标注为【BV-4mm²，450/750V】，多份清单雷同">材料【铜芯电线】规格型号【4mm2】不规范，应标注为【BV-4mm²，450/750V】，多份清单雷同</td></tr>
+<tr data-row-index="4"><td title="5">5</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="040401005">040401005</td><td title="岩棉保温板">岩棉保温板</td><td title="100mm">100mm</td><td title="材料【岩棉保温板】规格型号【100mm】不规范，应标注为【δ100mm，密度 120kg/m³】，多份清单雷同">材料【岩棉保温板】规格型号【100mm】不规范，应标注为【δ100mm，密度 120kg/m³】，多份清单雷同</td></tr>
+<tr data-row-index="5"><td title="6">6</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="010501006">010501006</td><td title="SBS 防水卷材">SBS 防水卷材</td><td title="4mm">4mm</td><td title="材料【SBS 防水卷材】规格型号【4mm】不规范，应标注为【4mm，Ⅱ型 PY PE】，多份清单雷同">材料【SBS 防水卷材】规格型号【4mm】不规范，应标注为【4mm，Ⅱ型 PY PE】，多份清单雷同</td></tr>
+<tr data-row-index="6"><td title="7">7</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="040601007">040601007</td><td title="柔性铸铁排水管">柔性铸铁排水管</td><td title="DN100">DN100</td><td title="材料【柔性铸铁排水管】规格型号【DN100】不规范，应标注为【DN100，W 型卡箍连接】，多份清单雷同">材料【柔性铸铁排水管】规格型号【DN100】不规范，应标注为【DN100，W 型卡箍连接】，多份清单雷同</td></tr>
+<tr data-row-index="7"><td title="8">8</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="010701008">010701008</td><td title="电缆桥架">电缆桥架</td><td title="200×100">200×100</td><td title="材料【电缆桥架】规格型号【200×100】不规范，应标注为【200×100，热浸锌 δ1.5】，多份清单雷同">材料【电缆桥架】规格型号【200×100】不规范，应标注为【200×100，热浸锌 δ1.5】，多份清单雷同</td></tr>
+<tr data-row-index="8"><td title="9">9</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="040801009">040801009</td><td title="PP-R 给水管">PP-R 给水管</td><td title="DN25">DN25</td><td title="材料【PP-R 给水管】规格型号【DN25】不规范，应标注为【dn25，S3.2 系列】，多份清单雷同">材料【PP-R 给水管】规格型号【DN25】不规范，应标注为【dn25，S3.2 系列】，多份清单雷同</td></tr>
+<tr data-row-index="9"><td title="10">10</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="010901010">010901010</td><td title="铝合金窗">铝合金窗</td><td title="1.5m×1.8m">1.5m×1.8m</td><td title="材料【铝合金窗】规格型号【1.5m×1.8m】不规范，应标注为【1500×1800，型材 60 系列】，多份清单雷同">材料【铝合金窗】规格型号【1.5m×1.8m】不规范，应标注为【1500×1800，型材 60 系列】，多份清单雷同</td></tr></tbody>
+        </table>
+      </div>
+      <footer class="pagination-bar" aria-label="材料规格型号不规范错误雷同分页">
+        <nav class="pager" aria-label="材料规格型号不规范错误雷同分页导航">
+          <button class="page-prev" type="button" aria-label="上一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" /></svg></button>
+          <button class="page-current" type="button" aria-current="page" aria-label="当前页">1</button>
+          <button class="page-next" type="button" aria-label="下一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5" /></svg></button>
+          <label><select class="page-size" aria-label="每页显示条数"><option selected>10</option><option>20</option><option>50</option></select><span>条/页</span></label>
+          <label class="jump-label">跳至<input class="page-jump" type="number" value="1" min="1" max="1" aria-label="跳转页码" />页</label>
+          <span class="total">共10条</span>
+        </nav>
+      </footer>
+    </div>
+  </div>
+</article>
+<article class="accordion-item" data-accordion-item data-page-size="10">
+  <h2 class="accordion-heading">
+    <button class="accordion-trigger" id="accordion-trigger-7" type="button" aria-expanded="true" aria-controls="accordion-panel-7">
+      <span class="accordion-label"><span class="accordion-index">07</span><span class="accordion-title">同类材料价格不规律错误雷同</span></span>
+      <svg class="accordion-chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="m5.5 7.5 4.5 4.5 4.5-4.5" /></svg>
+    </button>
+  </h2>
+  <div class="accordion-panel" id="accordion-panel-7">
+    <div class="accordion-panel-inner">
+      <div class="table-wrap">
+        <table class="data-table">
+          <caption class="sr-only">同类材料价格不规律错误雷同列表</caption>
+          <colgroup><col style="width:5%" /><col style="width:26%" /><col style="width:26%" /><col style="width:59%" /><col style="width:10%" /></colgroup>
+          <thead><tr><th scope="col">序号</th><th scope="col">单位名称</th><th scope="col">关联单位名称</th><th scope="col">雷同错误内容</th><th scope="col">查看</th></tr></thead>
+          <tbody><tr data-row-index="0"><td title="1">1</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="同类材料【C30 商品混凝土】在不同清单中综合单价分别为 486.00、512.00、468.00 元/m³，价格波动无规律，存在雷同风险">同类材料【C30 商品混凝土】在不同清单中综合单价分别为 486.00、512.00、468.00 元/m³，价格波动无规律，存在雷同风险</td><td><a class="link-btn" href="detail.html">查看</a></td></tr>
+<tr data-row-index="1"><td title="2">2</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="同类材料【HRB400 钢筋】在不同清单中综合单价分别为 4120.00、4380.00、3990.00 元/t，价格波动无规律，存在雷同风险">同类材料【HRB400 钢筋】在不同清单中综合单价分别为 4120.00、4380.00、3990.00 元/t，价格波动无规律，存在雷同风险</td><td><a class="link-btn" href="detail.html">查看</a></td></tr>
+<tr data-row-index="2"><td title="3">3</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="同类材料【蒸压加气混凝土砌块】在不同清单中综合单价分别为 268.00、295.00、252.00 元/m³，价格波动无规律，存在雷同风险">同类材料【蒸压加气混凝土砌块】在不同清单中综合单价分别为 268.00、295.00、252.00 元/m³，价格波动无规律，存在雷同风险</td><td><a class="link-btn" href="detail.html">查看</a></td></tr>
+<tr data-row-index="3"><td title="4">4</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="同类材料【SBS 改性沥青防水卷材】在不同清单中综合单价分别为 32.50、38.60、29.80 元/m²，价格波动无规律，存在雷同风险">同类材料【SBS 改性沥青防水卷材】在不同清单中综合单价分别为 32.50、38.60、29.80 元/m²，价格波动无规律，存在雷同风险</td><td><a class="link-btn" href="detail.html">查看</a></td></tr>
+<tr data-row-index="4"><td title="5">5</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="同类材料【PVC-U 排水管 DN110】在不同清单中综合单价分别为 18.60、22.40、16.90 元/m，价格波动无规律，存在雷同风险">同类材料【PVC-U 排水管 DN110】在不同清单中综合单价分别为 18.60、22.40、16.90 元/m，价格波动无规律，存在雷同风险</td><td><a class="link-btn" href="detail.html">查看</a></td></tr>
+<tr data-row-index="5"><td title="6">6</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什西南川建设工程有限公司">喀什西南川建设工程有限公司</td><td title="同类材料【铜芯电缆 YJV-4×25】在不同清单中综合单价分别为 86.40、95.20、79.60 元/m，价格波动无规律，存在雷同风险">同类材料【铜芯电缆 YJV-4×25】在不同清单中综合单价分别为 86.40、95.20、79.60 元/m，价格波动无规律，存在雷同风险</td><td><a class="link-btn" href="detail.html">查看</a></td></tr>
+<tr data-row-index="6"><td title="7">7</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</td><td title="同类材料【覆膜木胶合板模板】在不同清单中综合单价分别为 48.00、56.50、43.20 元/m²，价格波动无规律，存在雷同风险">同类材料【覆膜木胶合板模板】在不同清单中综合单价分别为 48.00、56.50、43.20 元/m²，价格波动无规律，存在雷同风险</td><td><a class="link-btn" href="detail.html">查看</a></td></tr>
+<tr data-row-index="7"><td title="8">8</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆万雄工程建设有限公司">新疆万雄工程建设有限公司</td><td title="同类材料【中砂】在不同清单中综合单价分别为 118.00、132.00、109.00 元/m³，价格波动无规律，存在雷同风险">同类材料【中砂】在不同清单中综合单价分别为 118.00、132.00、109.00 元/m³，价格波动无规律，存在雷同风险</td><td><a class="link-btn" href="detail.html">查看</a></td></tr>
+<tr data-row-index="8"><td title="9">9</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="新疆砺成建筑工程有限公司">新疆砺成建筑工程有限公司</td><td title="同类材料【铜闸阀 DN25】在不同清单中综合单价分别为 52.00、61.00、47.50 元/个，价格波动无规律，存在雷同风险">同类材料【铜闸阀 DN25】在不同清单中综合单价分别为 52.00、61.00、47.50 元/个，价格波动无规律，存在雷同风险</td><td><a class="link-btn" href="detail.html">查看</a></td></tr>
+<tr data-row-index="9"><td title="10">10</td><td class="unit-name-cell" title="示例单位名称">示例单位名称</td><td title="喀什地区中枢集团有限责任公司">喀什地区中枢集团有限责任公司</td><td title="同类材料【橡塑保温管 δ20】在不同清单中综合单价分别为 14.80、17.20、13.10 元/m，价格波动无规律，存在雷同风险">同类材料【橡塑保温管 δ20】在不同清单中综合单价分别为 14.80、17.20、13.10 元/m，价格波动无规律，存在雷同风险</td><td><a class="link-btn" href="detail.html">查看</a></td></tr></tbody>
+        </table>
+      </div>
+      <footer class="pagination-bar" aria-label="同类材料价格不规律错误雷同分页">
+        <nav class="pager" aria-label="同类材料价格不规律错误雷同分页导航">
+          <button class="page-prev" type="button" aria-label="上一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" /></svg></button>
+          <button class="page-current" type="button" aria-current="page" aria-label="当前页">1</button>
+          <button class="page-next" type="button" aria-label="下一页"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5" /></svg></button>
+          <label><select class="page-size" aria-label="每页显示条数"><option selected>10</option><option>20</option><option>50</option></select><span>条/页</span></label>
+          <label class="jump-label">跳至<input class="page-jump" type="number" value="1" min="1" max="1" aria-label="跳转页码" />页</label>
+          <span class="total">共10条</span>
+        </nav>
+      </footer>
+    </div>
+  </div>
+</article>
+      </section>
+    </main>
+    <dialog class="detail-dialog" aria-labelledby="detail-dialog-title">
+      <div class="detail-dialog-shell">
+        <header class="detail-dialog-header">
+          <h2 class="detail-dialog-title" id="detail-dialog-title">同类材料价格不规律雷同详情</h2>
+          <button class="detail-dialog-close" type="button" aria-label="关闭详情弹窗" title="关闭">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" /></svg>
+          </button>
+        </header>
+        <iframe class="detail-dialog-frame" title="同类材料价格不规律雷同详情" loading="lazy"></iframe>
+      </div>
+    </dialog>
+    <script src="../雷同关系矩阵/matrix-data.js"></script>
+    <script src="../雷同关系矩阵/pair-filter.js"></script>
+    <script src="../unit-filter.js"></script>
+    <script>
+      (() => {
+        const list = document.querySelector("[data-accordion-list]");
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+        function setExpanded(trigger, expanded, animate = true) {
+          const panel = document.getElementById(trigger.getAttribute("aria-controls"));
+          const wasExpanded = trigger.getAttribute("aria-expanded") === "true";
+          if (wasExpanded === expanded) return;
+          panel.getAnimations().forEach((animation) => animation.cancel());
+          trigger.setAttribute("aria-expanded", String(expanded));
+          panel.inert = !expanded;
+
+          if (!animate || reduceMotion.matches) {
+            panel.hidden = !expanded;
+            return;
+          }
+
+          if (expanded) {
+            panel.hidden = false;
+            const endHeight = panel.scrollHeight;
+            panel.animate(
+              [{ height: "0px", opacity: 0 }, { height: `${endHeight}px`, opacity: 1 }],
+              { duration: 240, easing: "cubic-bezier(0.2, 0.75, 0.25, 1)" }
+            );
+          } else {
+            const animation = panel.animate(
+              [{ height: `${panel.offsetHeight}px`, opacity: 1 }, { height: "0px", opacity: 0 }],
+              { duration: 240, easing: "cubic-bezier(0.2, 0.75, 0.25, 1)" }
+            );
+            animation.finished.then(() => {
+              if (trigger.getAttribute("aria-expanded") === "false") panel.hidden = true;
+            }).catch(() => undefined);
+          }
+        }
+
+        list.querySelectorAll(".accordion-trigger").forEach((trigger) => {
+          trigger.addEventListener("click", () => {
+            const nextExpanded = trigger.getAttribute("aria-expanded") !== "true";
+            if (nextExpanded && list.dataset.singleOpen === "true") {
+              list.querySelectorAll('.accordion-trigger[aria-expanded="true"]').forEach((other) => {
+                if (other !== trigger) setExpanded(other, false);
+              });
+            }
+            setExpanded(trigger, nextExpanded);
+          });
+        });
+
+        list.querySelectorAll("[data-accordion-item]").forEach((item) => {
+          const rows = window.UnitFilter.rows(item);
+          const previous = item.querySelector(".page-prev");
+          const next = item.querySelector(".page-next");
+          const currentButton = item.querySelector(".page-current");
+          const sizeSelect = item.querySelector(".page-size");
+          const jump = item.querySelector(".page-jump");
+          let page = 1;
+          let pageSize = Number(item.dataset.pageSize) || 10;
+
+          if (![10, 20, 50].includes(pageSize)) {
+            const option = document.createElement("option");
+            option.value = String(pageSize);
+            option.textContent = String(pageSize);
+            sizeSelect.prepend(option);
+          }
+          sizeSelect.value = String(pageSize);
+
+          function updatePage() {
+            const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+            page = Math.min(Math.max(1, page), totalPages);
+            rows.forEach((row, index) => {
+              row.hidden = index < (page - 1) * pageSize || index >= page * pageSize;
+            });
+            previous.disabled = page <= 1;
+            next.disabled = page >= totalPages;
+            currentButton.textContent = String(page);
+            currentButton.setAttribute("aria-label", `第 ${page} 页，共 ${totalPages} 页`);
+            jump.max = String(totalPages);
+            jump.value = String(page);
+          }
+
+          previous.addEventListener("click", () => { page -= 1; updatePage(); });
+          next.addEventListener("click", () => { page += 1; updatePage(); });
+          sizeSelect.addEventListener("change", () => { pageSize = Number(sizeSelect.value); page = 1; updatePage(); });
+          jump.addEventListener("change", () => { page = Number(jump.value) || 1; updatePage(); });
+          updatePage();
+        });
+      })();
+    </script>
+    <script>
+      (() => {
+        const dialog = document.querySelector(".detail-dialog");
+        const frame = dialog.querySelector(".detail-dialog-frame");
+        const closeButton = dialog.querySelector(".detail-dialog-close");
+        let opener = null;
+
+        document.querySelectorAll(".link-btn").forEach((link) => {
+          link.addEventListener("click", (event) => {
+            event.preventDefault();
+            opener = link;
+            frame.src = link.href;
+            dialog.showModal();
+            closeButton.focus();
+          });
+        });
+
+        function closeDialog() {
+          dialog.close();
+        }
+
+        closeButton.addEventListener("click", closeDialog);
+        dialog.addEventListener("click", (event) => {
+          const bounds = dialog.getBoundingClientRect();
+          const inside = event.clientX >= bounds.left && event.clientX <= bounds.right && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
+          if (!inside) closeDialog();
+        });
+        dialog.addEventListener("close", () => {
+          frame.removeAttribute("src");
+          if (opener) opener.focus();
+          opener = null;
+        });
+      })();
+    </script>
+
+  </body>
+</html>
+
