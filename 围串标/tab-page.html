@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>标书特征分析</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "PingFang SC", Helvetica, Arial, Verdana, "Microsoft YaHei", sans-serif;
+        font-synthesis: none;
+        --primary: #2590eb;
+        --primary-soft: #f4f9fe;
+        --text: #5c5c5c;
+        --muted: #858585;
+        --line: #ebebeb;
+        --header: #fafafa;
+        --tab-fill: #f7f7f7;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-width: 960px;
+        min-height: 100%;
+        margin: 0;
+        background: #ffffff;
+        color: var(--text);
+      }
+
+      body {
+        overflow: auto;
+        font-size: 14px;
+        line-height: 30px;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      ::selection {
+        color: #ffffff;
+        background: var(--primary);
+      }
+
+      .analysis-page {
+        min-height: 100vh;
+        padding-top: 20px;
+      }
+
+      .tab-bar {
+        display: flex;
+        height: 56px;
+        align-items: flex-end;
+        gap: 10px;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .tab-button {
+        position: relative;
+        display: inline-flex;
+        height: 45px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 24px;
+        border: 1px solid transparent;
+        border-bottom: 0;
+        border-radius: 4px 4px 0 0;
+        background: var(--tab-fill);
+        color: var(--text);
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 44px;
+        outline: 0;
+        white-space: nowrap;
+        transition:
+          color 140ms ease-out,
+          background-color 140ms ease-out,
+          border-color 140ms ease-out;
+      }
+
+      .tab-button:hover:not([aria-selected="true"]) {
+        background: #f2f6f9;
+        color: #3e82bd;
+      }
+
+      .tab-button:first-child {
+        padding-right: 16px;
+        padding-left: 16px;
+      }
+
+      .tab-button[aria-selected="true"] {
+        z-index: 1;
+        margin-bottom: -1px;
+        border-color: var(--line);
+        border-bottom: 1px solid #ffffff;
+        background: #ffffff;
+        color: var(--primary);
+      }
+
+      .tab-button:focus-visible {
+        outline: 2px solid rgba(37, 144, 235, 0.42);
+        outline-offset: -4px;
+      }
+
+      .tab-panel {
+        min-height: calc(100vh - 76px);
+        padding: 19px 35px 30px;
+      }
+
+      .embedded-panel {
+        height: calc(100vh - 76px);
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .embedded-page {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #ffffff;
+      }
+
+      .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .feature-table {
+        width: 100%;
+        min-width: 1120px;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .feature-table col:nth-child(1) { width: 5%; }
+      .feature-table col:nth-child(2) { width: 16%; }
+      .feature-table col:nth-child(3) { width: 16%; }
+      .feature-table col:nth-child(4) { width: 24%; }
+      .feature-table col:nth-child(5) { width: 24%; }
+      .feature-table col:nth-child(6) { width: 15%; }
+
+      .feature-table th,
+      .feature-table td {
+        height: 51px;
+        padding: 10px 15px;
+        overflow: hidden;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 30px;
+      }
+
+      .feature-table th {
+        background: var(--header);
+        color: var(--muted);
+      }
+
+      .feature-table tbody tr:nth-child(even) td {
+        background: var(--primary-soft);
+      }
+
+      .feature-table tbody tr {
+        transition: background-color 140ms ease-out;
+      }
+
+      .feature-table tbody tr:hover td {
+        background: #edf6fd;
+      }
+
+      .feature-table td:first-child,
+      .feature-table th:first-child {
+        padding-left: 15px;
+      }
+
+      .empty-state {
+        display: grid;
+        min-height: 245px;
+        color: #a0a0a0;
+        font-size: 14px;
+        place-items: center;
+      }
+
+      .compare-panel {
+        padding-top: 10px;
+      }
+
+      .accordion-list {
+        display: grid;
+        gap: 24px;
+      }
+
+      .accordion-item {
+        min-width: 1120px;
+      }
+
+      .accordion-trigger {
+        display: flex;
+        width: 100%;
+        height: 58px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px 0 10px;
+        border: 0;
+        border-bottom: 1px solid #51a6ef;
+        background: #ffffff;
+        color: var(--primary);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .accordion-trigger:hover {
+        background: #fbfdff;
+        color: #147dd4;
+      }
+
+      .accordion-trigger:focus-visible {
+        outline: 2px solid rgba(37, 144, 235, 0.45);
+        outline-offset: -3px;
+      }
+
+      .accordion-heading {
+        display: inline-flex;
+        min-width: 0;
+        align-items: center;
+        gap: 16px;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 24px;
+      }
+
+      .accordion-index {
+        flex: 0 0 auto;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .accordion-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .accordion-chevron {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.7;
+        transform: rotate(0deg);
+        transition: transform 220ms cubic-bezier(0.2, 0.75, 0.25, 1);
+      }
+
+      .accordion-trigger[aria-expanded="false"] .accordion-chevron {
+        transform: rotate(90deg);
+      }
+
+      .accordion-region {
+        overflow: hidden;
+        opacity: 1;
+      }
+
+      .accordion-region[aria-hidden="true"] {
+        height: 0;
+        opacity: 0;
+      }
+
+      .accordion-region-inner {
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .compare-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .compare-table {
+        width: 100%;
+        min-width: 1120px;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .compare-table col:nth-child(1) { width: 8.25%; }
+      .compare-table col:nth-child(2) { width: 31%; }
+      .compare-table col:nth-child(3) { width: 31%; }
+      .compare-table col:nth-child(4) { width: 14.75%; }
+      .compare-table col:nth-child(5) { width: 15%; }
+
+      .compare-table th,
+      .compare-table td {
+        height: 41px;
+        padding: 9px 12px;
+        overflow: hidden;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 22px;
+      }
+
+      .compare-table th {
+        background: var(--header);
+        color: var(--muted);
+      }
+
+      .compare-table tbody tr:nth-child(even) td {
+        background: var(--primary-soft);
+      }
+
+      .compare-table tbody tr {
+        transition: background-color 140ms ease-out;
+      }
+
+      .compare-table tbody tr:hover td {
+        background: #edf6fd;
+      }
+
+      .compare-pagination {
+        display: flex;
+        min-height: 53px;
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding: 8px 0 17px;
+      }
+
+      .compare-pager {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--text);
+        line-height: 28px;
+        white-space: nowrap;
+      }
+
+      .compare-pager button,
+      .compare-pager select,
+      .compare-pager input {
+        height: 28px;
+        border: 1px solid #d6d6d6;
+        border-radius: 4px;
+        background: #ffffff;
+        color: var(--text);
+        font: inherit;
+      }
+
+      .compare-pager button {
+        display: inline-grid;
+        min-width: 28px;
+        padding: 0 6px;
+        place-items: center;
+      }
+
+      .compare-pager button[aria-current="page"] {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
+      .compare-pager button:disabled {
+        color: #c9cdd2;
+        cursor: not-allowed;
+      }
+
+      .compare-pager button:focus-visible,
+      .compare-pager select:focus-visible,
+      .compare-pager input:focus-visible {
+        outline: 2px solid rgba(37, 144, 235, 0.45);
+        outline-offset: 2px;
+      }
+
+      .compare-pager svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+      }
+
+      .compare-pager select {
+        width: 86px;
+        margin-left: 4px;
+        padding: 0 4px;
+        cursor: pointer;
+      }
+
+      .compare-jump {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 12px;
+      }
+
+      .compare-jump input {
+        width: 36px;
+        padding: 0 4px;
+        text-align: center;
+        appearance: textfield;
+      }
+
+      .compare-jump input::-webkit-inner-spin-button,
+      .compare-jump input::-webkit-outer-spin-button {
+        margin: 0;
+        appearance: none;
+      }
+
+      .compare-total {
+        margin-left: 12px;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 1200px) {
+        .tab-panel {
+          padding-right: 24px;
+          padding-left: 24px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="analysis-page" aria-label="标书特征分析">
+      <nav class="tab-bar" role="tablist" aria-label="标书特征分析方式">
+        <button class="tab-button" id="tab-feature-code" type="button" role="tab" aria-selected="true" aria-controls="panel-feature-code" tabindex="0">关键指标雷同</button>
+        <button class="tab-button" id="tab-code-compare" type="button" role="tab" aria-selected="false" aria-controls="panel-code-compare" tabindex="-1">异常行为分析</button>
+      </nav>
+
+      <section class="tab-panel embedded-panel" id="panel-feature-code" role="tabpanel" aria-labelledby="tab-feature-code">
+        <iframe class="embedded-page" src="accordion-grid.html" title="关键指标雷同页面"></iframe>
+      </section>
+
+      <section class="tab-panel embedded-panel" id="panel-code-compare" role="tabpanel" aria-labelledby="tab-code-compare" hidden>
+        <iframe class="embedded-page" src="bid-exception-list.html" title="异常行为分析页面" loading="lazy"></iframe>
+      </section>
+
+    </main>
+
+    <script>
+      const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+
+      function activateTab(nextTab, updateHash = true) {
+        tabs.forEach((tab) => {
+          const selected = tab === nextTab;
+          tab.setAttribute("aria-selected", String(selected));
+          tab.tabIndex = selected ? 0 : -1;
+          document.getElementById(tab.getAttribute("aria-controls")).hidden = !selected;
+        });
+
+        if (updateHash) {
+          history.replaceState(null, "", `#${nextTab.id}`);
+        }
+      }
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => activateTab(tab));
+        tab.addEventListener("keydown", (event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+
+          event.preventDefault();
+          let nextIndex = index;
+          if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+          if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+          if (event.key === "Home") nextIndex = 0;
+          if (event.key === "End") nextIndex = tabs.length - 1;
+          activateTab(tabs[nextIndex]);
+          tabs[nextIndex].focus();
+        });
+      });
+
+      const hashTab = location.hash ? document.querySelector(location.hash) : null;
+      if (hashTab?.matches('[role="tab"]')) activateTab(hashTab, false);
+    </script>
+  </body>
+</html>

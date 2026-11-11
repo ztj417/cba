@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>同类材料价格不规律雷同详情</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "PingFang SC", Helvetica, Arial, Verdana, "Microsoft YaHei", sans-serif;
+        font-synthesis: none;
+        --text: #5c5c5c;
+        --muted: #858585;
+        --line: #ebebeb;
+        --stripe: #f4f9fe;
+        --header: #fafafa;
+        --primary: #2590eb;
+        --control-border: #d6d6d6;
+        --flag-bg: #fff8e6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-width: 760px;
+        height: 100%;
+        margin: 0;
+        background: #ffffff;
+        color: var(--text);
+      }
+
+      body {
+        overflow: auto;
+        font-size: 14px;
+        line-height: 30px;
+      }
+
+      button,
+      select,
+      input {
+        font: inherit;
+      }
+
+      button,
+      select,
+      input,
+      a {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      ::selection {
+        color: #ffffff;
+        background: var(--primary);
+      }
+
+      .page {
+        display: flex;
+        min-height: 100%;
+        flex-direction: column;
+        padding: 8px 16px 0;
+      }
+
+      .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .price-table {
+        width: 100%;
+        min-width: 980px;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .price-table col:nth-child(1) {
+        width: 5.5%;
+      }
+
+      .price-table col:nth-child(2) {
+        width: 13%;
+      }
+
+      .price-table col:nth-child(3) {
+        width: 28%;
+      }
+
+      .price-table col:nth-child(4) {
+        width: 7%;
+      }
+
+      .price-table col:nth-child(5) {
+        width: 23.25%;
+      }
+
+      .price-table col:nth-child(6) {
+        width: 23.25%;
+      }
+
+      .price-table th,
+      .price-table td {
+        height: 41px;
+        padding: 9px 12px;
+        overflow: hidden;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 22px;
+      }
+
+      .price-table th {
+        background: var(--header);
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      .price-table tbody tr:nth-child(even) td {
+        background: var(--stripe);
+      }
+
+      .price-table tbody tr {
+        transition: background-color 160ms ease-out;
+      }
+
+      .price-table tbody tr:hover td {
+        background: #f5f5f5;
+      }
+
+      .price-table tbody tr:nth-child(1n) td.is-repeat {
+        background: var(--flag-bg);
+      }
+
+      .price-table tbody tr:nth-child(1n):hover td.is-repeat {
+        background: #fdf0d5;
+      }
+
+      .pagination-bar {
+        display: flex;
+        min-height: 45px;
+        flex: 1 0 45px;
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding: 8px 0;
+      }
+
+      .pager {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--text);
+        line-height: 28px;
+        white-space: nowrap;
+      }
+
+      .pager button,
+      .pager select,
+      .pager input {
+        height: 28px;
+        border: 1px solid var(--control-border);
+        border-radius: 4px;
+        background: #ffffff;
+        color: var(--text);
+      }
+
+      .pager button {
+        display: inline-grid;
+        min-width: 28px;
+        padding: 0 6px;
+        cursor: pointer;
+        place-items: center;
+      }
+
+      .pager button[aria-current="page"] {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+
+      .pager button:disabled {
+        color: #c9cdd2;
+        cursor: not-allowed;
+      }
+
+      .pager svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+      }
+
+      .pager select {
+        width: 86px;
+        height: 28px;
+        margin-left: 4px;
+        padding: 0 4px;
+        border: 1px solid var(--control-border);
+        border-radius: 4px;
+        background: #ffffff;
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      .jump-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 12px;
+      }
+
+      .pager input {
+        width: 36px;
+        padding: 0 4px;
+        text-align: center;
+        appearance: textfield;
+      }
+
+      .pager input::-webkit-inner-spin-button,
+      .pager input::-webkit-outer-spin-button {
+        margin: 0;
+        appearance: none;
+      }
+
+      .total {
+        margin-left: 12px;
+      }
+
+      .pager button:focus-visible,
+      .pager select:focus-visible,
+      .pager input:focus-visible {
+        outline: 2px solid rgba(37, 144, 235, 0.45);
+        outline-offset: 2px;
+      }
+
+      @media (max-width: 900px) {
+        .pagination-bar {
+          min-width: 760px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="同类材料价格不规律雷同详情页面">
+      <section class="table-wrap" aria-label="同类材料价格不规律雷同详情">
+        <table class="price-table">
+          <colgroup>
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">序号</th>
+              <th scope="col">材料编码</th>
+              <th scope="col">材料规格</th>
+              <th scope="col">单位</th>
+              <th scope="col" title="新疆中鼎建设集团有限公司">新疆中鼎建设集团有限公司</th>
+              <th scope="col" title="喀什西南川徽建设工程有限公司">喀什西南川徽建设工程有限公司</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td title="010101001003">010101001003</td>
+              <td title="现浇混凝土 C20 碎石 20mm（泵送）">现浇混凝土 C20 碎石 20mm（泵送）</td>
+              <td>m³</td>
+              <td class="is-repeat" title="与第2条主单位价格完全相同（452.00 元）">452.00 元</td>
+              <td>452.00 元</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td title="010101001004">010101001004</td>
+              <td title="现浇混凝土 C25 碎石 20mm（泵送）">现浇混凝土 C25 碎石 20mm（泵送）</td>
+              <td>m³</td>
+              <td class="is-repeat" title="与第1条主单位价格完全相同（452.00 元）">452.00 元</td>
+              <td>452.00 元</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td title="010101001005">010101001005</td>
+              <td title="现浇混凝土 C30 碎石 20mm（泵送）">现浇混凝土 C30 碎石 20mm（泵送）</td>
+              <td>m³</td>
+              <td>486.00 元</td>
+              <td>486.00 元</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td title="010501002004">010501002004</td>
+              <td title="螺纹钢筋 HRB400E φ12">螺纹钢筋 HRB400E φ12</td>
+              <td>t</td>
+              <td class="is-repeat" title="与第5条主单位价格完全相同（4318.00 元）">4318.00 元</td>
+              <td>4318.00 元</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td title="010501002005">010501002005</td>
+              <td title="螺纹钢筋 HRB400E φ14">螺纹钢筋 HRB400E φ14</td>
+              <td>t</td>
+              <td class="is-repeat" title="与第4条主单位价格完全相同（4318.00 元）">4318.00 元</td>
+              <td>4318.00 元</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td title="010501002008">010501002008</td>
+              <td title="螺纹钢筋 HRB400E φ25">螺纹钢筋 HRB400E φ25</td>
+              <td>t</td>
+              <td>4295.00 元</td>
+              <td>4302.00 元</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td title="010902001001">010902001001</td>
+              <td title="改性沥青防水卷材 SBS-Ⅰ型 4mm">改性沥青防水卷材 SBS-Ⅰ型 4mm</td>
+              <td>m²</td>
+              <td>32.60 元</td>
+              <td class="is-repeat" title="与第8条关联单位价格完全相同（32.60 元）">32.60 元</td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td title="010902001002">010902001002</td>
+              <td title="改性沥青防水卷材 SBS-Ⅱ型 3mm">改性沥青防水卷材 SBS-Ⅱ型 3mm</td>
+              <td>m²</td>
+              <td>29.80 元</td>
+              <td class="is-repeat" title="与第7条关联单位价格完全相同（32.60 元）">32.60 元</td>
+            </tr>
+            <tr>
+              <td>9</td>
+              <td title="010401001002">010401001002</td>
+              <td title="烧结多孔砖 240×115×90">烧结多孔砖 240×115×90</td>
+              <td>千块</td>
+              <td>682.00 元</td>
+              <td>682.00 元</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td title="010401001006">010401001006</td>
+              <td title="蒸压加气混凝土砌块 600×200×200">蒸压加气混凝土砌块 600×200×200</td>
+              <td>m³</td>
+              <td>268.00 元</td>
+              <td>268.00 元</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <footer class="pagination-bar" aria-label="分页导航">
+        <nav class="pager" aria-label="列表分页">
+          <button type="button" disabled aria-label="上一页">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" /></svg>
+          </button>
+          <button type="button" aria-current="page" aria-label="第 1 页">1</button>
+          <button type="button" disabled aria-label="下一页">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7.5 4.5 5 5.5-5 5.5" /></svg>
+          </button>
+          <label>
+            <select aria-label="每页显示条数">
+              <option selected>10 条/页</option>
+              <option>20 条/页</option>
+              <option>50 条/页</option>
+            </select>
+          </label>
+          <label class="jump-label">
+            跳至
+            <input type="number" value="1" min="1" max="1" aria-label="跳转页码" />
+            页
+          </label>
+          <span class="total">共10条</span>
+        </nav>
+      </footer>
+    </main>
+  </body>
+</html>
