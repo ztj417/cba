@@ -1,0 +1,10 @@
+
+#analysis-popup{padding:0;margin:auto;width:1440px;max-width:calc(100vw - 48px);height:800px;max-height:calc(100dvh - 48px);border:1px solid #dfe5ec;border-radius:12px;background:white;box-shadow:0 20px 65px #16233733;overflow:hidden;color:#334155}
+#analysis-popup[open]{display:flex;flex-direction:column}
+#analysis-popup::backdrop{background:#15243a66}
+#analysis-popup>header{height:52px;flex:0 0 52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #e5e7eb;background:#f8fafc}
+#analysis-popup h2{font-size:15px;font-weight:600;margin:0}
+#analysis-popup header button{border:0;border-radius:5px;background:transparent;padding:6px 10px;color:#64748b;font-size:17px}
+#analysis-popup header button:hover{background:#e8edf3}
+#analysis-popup iframe{display:block;width:100%;flex:1;min-height:0;border:0;background:#fff}
+@media(max-width:640px){#analysis-popup{max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}}

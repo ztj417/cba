@@ -164,7 +164,7 @@
   <body>
     <header class="tab-bar">
       <nav class="tab-strip" id="tabStrip" role="tablist" aria-label="页面导航"></nav>
-      <a class="open-current" id="openCurrent" target="_blank" rel="noopener noreferrer" title="目标页面若无法嵌入，可在新窗口中打开">新窗口打开</a>
+      
     </header>
     <main class="panel-area" id="panelArea"></main>
     <noscript><p class="no-script">此页面需要启用 JavaScript 才能切换 Tab。</p></noscript>
@@ -184,15 +184,13 @@
         if (unit) {
           const context = document.createElement("div");
           context.style.cssText = "display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 20px 0;font-size:14px;color:#333";
-          const back = document.createElement("a"); back.href = "index.html"; back.textContent = "返回矩阵"; back.style.color = "#167bcf";
           const name = document.createElement("strong"); name.textContent = unit + "（自身维度）";
-          const notice = document.createElement("span"); notice.textContent = "示例数据"; notice.style.color = "#858585";
-          context.append(back, name, notice); document.body.prepend(context);
+          context.append(name); document.body.prepend(context);
         }
 
         const tabStrip = document.getElementById("tabStrip");
         const panelArea = document.getElementById("panelArea");
-        const openCurrent = document.getElementById("openCurrent");
+        const openCurrent = (document.getElementById("openCurrent") || document.createElement("a"));
         const buttons = [];
         const panels = [];
         const frames = [];

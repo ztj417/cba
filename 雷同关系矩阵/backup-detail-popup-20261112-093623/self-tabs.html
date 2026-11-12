@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>单位自身分析</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "PingFang SC", Helvetica, Arial, Verdana, "Microsoft YaHei", sans-serif;
+        font-synthesis: none;
+        --primary: #2590eb;
+        --primary-hover: #167bcf;
+        --text: #5c5c5c;
+        --line: #ebebeb;
+        --tab-fill: #f7f7f7;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        background: #ffffff;
+        color: var(--text);
+      }
+
+      body {
+        display: flex;
+        min-width: 320px;
+        flex-direction: column;
+        overflow: hidden;
+        font-size: 14px;
+      }
+
+      button, a { font: inherit; }
+      ::selection { color: #ffffff; background: var(--primary); }
+
+      .tab-bar {
+        display: flex;
+        height: 76px;
+        flex: 0 0 76px;
+        align-items: flex-end;
+        gap: 12px;
+        padding: 20px 20px 0;
+        overflow: hidden;
+        border-bottom: 1px solid var(--line);
+        background: #ffffff;
+      }
+
+      .tab-strip {
+        display: flex;
+        min-width: 0;
+        height: 56px;
+        flex: 1 1 auto;
+        align-items: flex-end;
+        gap: 10px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-color: #cfd8df transparent;
+        scrollbar-width: thin;
+      }
+
+      .tab-strip::-webkit-scrollbar { height: 4px; }
+      .tab-strip::-webkit-scrollbar-thumb { border-radius: 2px; background: #cfd8df; }
+
+      .tab-button {
+        position: relative;
+        display: inline-flex;
+        height: 45px;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        padding: 0 20px;
+        border: 1px solid transparent;
+        border-bottom: 0;
+        border-radius: 4px 4px 0 0;
+        background: var(--tab-fill);
+        color: var(--text);
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 44px;
+        outline: 0;
+        white-space: nowrap;
+        transition: color 140ms ease-out, background-color 140ms ease-out, border-color 140ms ease-out;
+      }
+
+      .tab-button:hover:not([aria-selected="true"]) {
+        background: #f2f6f9;
+        color: #3e82bd;
+      }
+
+      .tab-button[aria-selected="true"] {
+        z-index: 1;
+        margin-bottom: -1px;
+        border-color: var(--line);
+        border-bottom: 1px solid #ffffff;
+        background: #ffffff;
+        color: var(--primary);
+      }
+
+      .tab-button:focus-visible,
+      .open-current:focus-visible {
+        outline: 2px solid rgba(37, 144, 235, 0.45);
+        outline-offset: -4px;
+      }
+
+      .open-current {
+        display: inline-flex;
+        height: 34px;
+        flex: 0 0 auto;
+        align-items: center;
+        margin-bottom: 7px;
+        padding: 0 12px;
+        border: 1px solid #cfe4f7;
+        border-radius: 4px;
+        background: #ffffff;
+        color: var(--primary);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .open-current:hover {
+        border-color: #9dcef5;
+        color: var(--primary-hover);
+        background: #f7fbff;
+      }
+
+      .panel-area {
+        position: relative;
+        min-height: 0;
+        flex: 1 1 auto;
+        background: #ffffff;
+      }
+
+      .tab-panel { width: 100%; height: 100%; }
+      .tab-panel[hidden] { display: none; }
+
+      .content-frame {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #ffffff;
+      }
+
+      .no-script {
+        margin: 24px;
+        color: #b42318;
+      }
+
+      @media (max-width: 680px) {
+        .tab-bar { padding-right: 8px; padding-left: 8px; }
+        .tab-button { padding-right: 16px; padding-left: 16px; font-size: 15px; }
+        .open-current { padding-right: 9px; padding-left: 9px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="tab-bar">
+      <nav class="tab-strip" id="tabStrip" role="tablist" aria-label="页面导航"></nav>
+      <a class="open-current" id="openCurrent" target="_blank" rel="noopener noreferrer" title="目标页面若无法嵌入，可在新窗口中打开">新窗口打开</a>
+    </header>
+    <main class="panel-area" id="panelArea"></main>
+    <noscript><p class="no-script">此页面需要启用 JavaScript 才能切换 Tab。</p></noscript>
+
+    <script type="application/json" id="tabConfig">{"title":"单位自身分析","tabs":[{"name":"清单审查","url":"review-list.html"},{"name":"异常行为分析","url":"../围串标/bid-exception-list.html"}]}</script>
+    <script>
+      (() => {
+        "use strict";
+
+        const config = JSON.parse(document.getElementById("tabConfig").textContent);
+        const unit = new URLSearchParams(location.search).get("unit");
+        config.tabs.forEach(tab => {
+          const url = new URL(tab.url, location.href);
+          if (unit) url.searchParams.set("unit", unit);
+          tab.url = url.href;
+        });
+        if (unit) {
+          const context = document.createElement("div");
+          context.style.cssText = "display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 20px 0;font-size:14px;color:#333";
+          const back = document.createElement("a"); back.href = "index.html"; back.textContent = "返回矩阵"; back.style.color = "#167bcf";
+          const name = document.createElement("strong"); name.textContent = unit + "（自身维度）";
+          const notice = document.createElement("span"); notice.textContent = "示例数据"; notice.style.color = "#858585";
+          context.append(back, name, notice); document.body.prepend(context);
+        }
+
+        const tabStrip = document.getElementById("tabStrip");
+        const panelArea = document.getElementById("panelArea");
+        const openCurrent = document.getElementById("openCurrent");
+        const buttons = [];
+        const panels = [];
+        const frames = [];
+
+        function loadFrame(index) {
+          const frame = frames[index];
+          if (frame.dataset.loaded === "true") return;
+          frame.src = frame.dataset.src;
+          frame.dataset.loaded = "true";
+        }
+
+        function activateTab(index, updateHash = true) {
+          buttons.forEach((button, buttonIndex) => {
+            const selected = buttonIndex === index;
+            button.setAttribute("aria-selected", String(selected));
+            button.tabIndex = selected ? 0 : -1;
+            panels[buttonIndex].hidden = !selected;
+          });
+
+          loadFrame(index);
+          openCurrent.href = config.tabs[index].url;
+          openCurrent.setAttribute("aria-label", `在新窗口打开：${config.tabs[index].name}`);
+          document.title = `${config.tabs[index].name} - ${config.title}`;
+          if (updateHash) history.replaceState(null, "", `#tab-${index + 1}`);
+        }
+
+        config.tabs.forEach((tab, index) => {
+          const tabId = `tab-${index + 1}`;
+          const panelId = `panel-${index + 1}`;
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "tab-button";
+          button.id = tabId;
+          button.setAttribute("role", "tab");
+          button.setAttribute("aria-controls", panelId);
+          button.setAttribute("aria-selected", "false");
+          button.tabIndex = -1;
+          button.textContent = tab.name;
+          button.title = tab.name;
+
+          const panel = document.createElement("section");
+          panel.className = "tab-panel";
+          panel.id = panelId;
+          panel.setAttribute("role", "tabpanel");
+          panel.setAttribute("aria-labelledby", tabId);
+          panel.hidden = true;
+
+          const frame = document.createElement("iframe");
+          frame.className = "content-frame";
+          frame.dataset.src = tab.url;
+          frame.dataset.loaded = "false";
+          frame.loading = index === 0 ? "eager" : "lazy";
+          frame.referrerPolicy = "strict-origin-when-cross-origin";
+          frame.setAttribute("sandbox", "allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts");
+          frame.title = `${tab.name}页面`;
+          panel.appendChild(frame);
+
+          button.addEventListener("click", () => activateTab(index));
+          button.addEventListener("keydown", (event) => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+
+            let nextIndex = index;
+            if (event.key === "ArrowLeft") nextIndex = (index - 1 + buttons.length) % buttons.length;
+            if (event.key === "ArrowRight") nextIndex = (index + 1) % buttons.length;
+            if (event.key === "Home") nextIndex = 0;
+            if (event.key === "End") nextIndex = buttons.length - 1;
+            activateTab(nextIndex);
+            buttons[nextIndex].focus({ preventScroll: true });
+          });
+
+          buttons.push(button);
+          panels.push(panel);
+          frames.push(frame);
+          tabStrip.appendChild(button);
+          panelArea.appendChild(panel);
+        });
+
+        const hashMatch = location.hash.match(/^#tab-(\d+)$/);
+        const hashIndex = hashMatch ? Number(hashMatch[1]) - 1 : 0;
+        activateTab(hashIndex >= 0 && hashIndex < buttons.length ? hashIndex : 0, false);
+      })();
+    </script>
+  </body>
+</html>

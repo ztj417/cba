@@ -197,10 +197,10 @@
       <button type="submit">查询</button>
       <button type="button" id="resetUnit">重置</button>
     </form>
-    <div id="matrixContext" hidden style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 20px 0;color:#333"><a href="雷同关系矩阵/index.html" style="color:#167bcf;text-decoration:none">返回矩阵</a><strong id="matrixNames"></strong><span id="matrixCounts" style="font-size:12px;color:#666"></span><span style="font-size:12px;color:#888">示例数据</span></div>
+    <div id="matrixContext" hidden style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 20px 0;color:#333"><strong id="matrixNames"></strong></div>
     <header class="tab-bar">
       <nav class="tab-strip" id="tabStrip" role="tablist" aria-label="页面导航"></nav>
-      <a class="open-current" id="openCurrent" target="_blank" rel="noopener noreferrer" title="目标页面若无法嵌入，可在新窗口中打开">新窗口打开</a>
+      
     </header>
     <main class="panel-area" id="panelArea"></main>
     <noscript><p class="no-script">此页面需要启用 JavaScript 才能切换 Tab。</p></noscript>
@@ -214,7 +214,7 @@
         const config = JSON.parse(document.getElementById("tabConfig").textContent);
         const tabStrip = document.getElementById("tabStrip");
         const panelArea = document.getElementById("panelArea");
-        const openCurrent = document.getElementById("openCurrent");
+        const openCurrent = (document.getElementById("openCurrent") || document.createElement("a"));
         const buttons = [];
         const panels = [];
         const frames = [];
@@ -232,7 +232,6 @@
           const b = data.companies.findIndex(c => c[0] === selectionParams.get("unitB"));
           const selected = a === b ? data.selves[a] : data.pairs.find(p => (p.a === a && p.b === b) || (p.a === b && p.b === a));
           document.getElementById("matrixNames").textContent = selected ? data.companies[a][0] + (a === b ? "（自身维度）" : " / " + data.companies[b][0]) : "未找到对应的单位组合";
-          document.getElementById("matrixCounts").textContent = selected ? `触发 ${selected.rules} 项规则 · 问题总数 ${selected.total}` : "";
           config.tabs.forEach((tab, index) => { tab.name += `（${selected?.counts[index] ?? 0}）`; });
         }
 
